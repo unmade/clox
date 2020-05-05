@@ -1,3 +1,8 @@
+#ifndef clox_scanner_h 
+#define clox_scanner_h 
+
+#include <stdio.h>
+
 #define MAXTOKEN 100
 
 typedef enum {
@@ -53,7 +58,11 @@ typedef struct {
     TokenType type;
     int lineno;
     int length;
+    char *repr;
 } Token;
 
 
 int scan(FILE *input, Token **tokens);
+Token *maketoken(int type, int length, char *repr);
+
+#endif

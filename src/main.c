@@ -3,7 +3,6 @@
 
 #include "scanner.h"
 
-
 int main(int argc, char *argv[])
 {
     int i, n;
@@ -27,7 +26,7 @@ int main(int argc, char *argv[])
         n = scan(source, tokens);
 
         for (i = 0; i < n; i++) {
-            printf("Token(type=%d, line=%d)\n", tokens[i]->type, tokens[i]->lineno);
+            printf("Token(type=%d, repr='%s')\n", tokens[i]->type, tokens[i]->repr);
         }
 
         if (feof(source))

@@ -27,7 +27,6 @@ Keyword KEYWORDS[] = {
     { "while", TOKEN_WHILE },
 };
 
-Token *maketoken(int type, int length);
 Token *gettoken(int c, FILE *s);
 Token *makestrtoken(FILE *ifp);
 Token *makenumtoken(FILE *ifp);
@@ -71,54 +70,54 @@ Token *gettoken(int c, FILE *ifp)
 
     switch(c) {
         case '(':
-            return maketoken(TOKEN_LEFT_PAREN, 1);
+            return maketoken(TOKEN_LEFT_PAREN, 1, "(");
         case ')':
-            return maketoken(TOKEN_RIGHT_PAREN, 1);
+            return maketoken(TOKEN_RIGHT_PAREN, 1, ")");
         case '{':
-            return maketoken(TOKEN_LEFT_BRACE, 1);
+            return maketoken(TOKEN_LEFT_BRACE, 1, "{");
         case '}':
-            return maketoken(TOKEN_RIGHT_BRACE, 1);
+            return maketoken(TOKEN_RIGHT_BRACE, 1, "}");
         case ',':
-            return maketoken(TOKEN_COMMA, 1);
+            return maketoken(TOKEN_COMMA, 1, ",");
         case '.':
-            return maketoken(TOKEN_DOT, 1);
+            return maketoken(TOKEN_DOT, 1, ".");
         case ';':
-            return maketoken(TOKEN_SEMICOLON, 1);
+            return maketoken(TOKEN_SEMICOLON, 1, ";");
         case '-':
-            return maketoken(TOKEN_MINUS, 1);
+            return maketoken(TOKEN_MINUS, 1, "-");
         case '+':
-            return maketoken(TOKEN_PLUS, 1);
+            return maketoken(TOKEN_PLUS, 1, "+");
         case '*':
-            return maketoken(TOKEN_STAR, 1);
+            return maketoken(TOKEN_STAR, 1, "*");
         case '/':
-            return maketoken(TOKEN_SLASH, 1);
+            return maketoken(TOKEN_SLASH, 1, "/");
         case '!':
             if ((next_c = getc(ifp)) == '=')
-                return maketoken(TOKEN_BANG_EQUAL, 2);
+                return maketoken(TOKEN_BANG_EQUAL, 2, "!=");
             else {
                 ungetc(next_c, ifp);
-                return maketoken(TOKEN_BANG, 1);
+                return maketoken(TOKEN_BANG, 1, "!");
             }
         case '=':
             if ((next_c = getc(ifp)) == '=')
-                return maketoken(TOKEN_EQUAL_EQUAL, 2);
+                return maketoken(TOKEN_EQUAL_EQUAL, 2, "==");
             else {
                 ungetc(next_c, ifp);
-                return maketoken(TOKEN_EQUAL, 1);
+                return maketoken(TOKEN_EQUAL, 1, "=");
             }
         case '<':
             if ((next_c = getc(ifp)) == '=')
-                return maketoken(TOKEN_LESS_EQUAL, 2);
+                return maketoken(TOKEN_LESS_EQUAL, 2, "<=");
             else {
                 ungetc(next_c, ifp);
-                return maketoken(TOKEN_LESS, 1);
+                return maketoken(TOKEN_LESS, 1, "<");
             }
         case '>':
             if ((next_c = getc(ifp)) == '=')
-                return maketoken(TOKEN_GREATER_EQUAL, 2);
+                return maketoken(TOKEN_GREATER_EQUAL, 2, ">=");
             else {
                 ungetc(next_c, ifp);
-                return maketoken(TOKEN_GREATER, 1);
+                return maketoken(TOKEN_GREATER, 1, ">");
             }
         case '"':
             return makestrtoken(ifp);
@@ -130,16 +129,17 @@ Token *gettoken(int c, FILE *ifp)
                 ungetc(c, ifp);
                 return makeidtoken(ifp);
             }
-            return maketoken(TOKEN_ERROR, 0);
+            return maketoken(TOKEN_ERROR, 0, NULL);
    }
 }
 
 
-Token *maketoken(int type, int length)
+Token *maketoken(int type, int length, char *repr)
 {
     Token *token = (Token *) malloc(sizeof(Token));
     
     token->type = type;
+    token->repr = repr;
     token->lineno = 1;
     token->length = length;
 
@@ -150,18 +150,21 @@ Token *maketoken(int type, int length)
 Token *makestrtoken(FILE *ifp)
 {
     int c, len;
+    char s[128];
+    char *p = s;
 
     len = 0;
-    while ((c = getc(ifp)) != EOF && c != '"')
+    while ((*p++ = c = getc(ifp)) != EOF && c != '"')
         len++;
+    *p = '\0';
 
     if (c != '"')
-        return maketoken(TOKEN_ERROR, 0);
+        return maketoken(TOKEN_ERROR, 0, NULL);
 
     if (c != EOF && c != '"')
         ungetc(c, ifp);
 
-    return maketoken(TOKEN_STRING, len);
+    return maketoken(TOKEN_STRING, len, strdup(s));
 }
 
 
@@ -180,7 +183,7 @@ Token *makenumtoken(FILE *ifp)
         ungetc(c, ifp);    
     }
 
-    return maketoken(TOKEN_NUMBER, 0);
+    return maketoken(TOKEN_NUMBER, 0, strdup(s));
 }
 
 
@@ -201,9 +204,9 @@ Token *makeidtoken(FILE *ifp)
 
     Keyword *kwrd = binsearch(s, KEYWORDS, NKEYS);
     if (kwrd != NULL)
-        return maketoken(kwrd->type, 0);
+        return maketoken(kwrd->type, 0, strdup(s));
 
-    return maketoken(TOKEN_IDENTIFIER, 0);
+    return maketoken(TOKEN_IDENTIFIER, 0, strdup(s));
 }
 
 
