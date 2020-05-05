@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "expr.h"
 #include "scanner.h"
 
 int main(int argc, char *argv[])
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
         n = scan(source, tokens);
 
         for (i = 0; i < n; i++) {
-            printf("Token(type=%d, repr='%s')\n", tokens[i]->type, tokens[i]->repr);
+            printf("Token(type=%d, lexeme='%s')\n", tokens[i]->type, tokens[i]->lexeme);
         }
 
         if (feof(source))

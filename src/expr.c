@@ -61,16 +61,16 @@ char *str_expr(char *str, Expr *expr)
 
     switch(expr->type) {
         case EXPR_BINARY:
-            paren(str, expr->binary.op->repr, 2, expr->binary.left, expr->binary.right);
+            paren(str, expr->binary.op->lexeme, 2, expr->binary.left, expr->binary.right);
             break;
         case EXPR_GROUPING:
             paren(str, "group", 1, expr->grouping);
             break;
         case EXPR_LITERAL:
-            strcat(s, expr->literal->repr);
+            strcat(s, expr->literal->lexeme);
             break;
         case EXPR_UNARY:
-            paren(str, expr->unary.op->repr, 1, expr->unary.right);
+            paren(str, expr->unary.op->lexeme, 1, expr->unary.right);
             break;
         default:
             break;

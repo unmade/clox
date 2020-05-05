@@ -57,12 +57,12 @@ typedef struct {
 typedef struct {
     TokenType type;
     int lineno;
-    int length;
-    char *repr;
+    int len;
+    char *lexeme;
 } Token;
 
 
 int scan(FILE *input, Token **tokens);
-Token *maketoken(int type, int length, char *repr);
+Token *new_token(int type, char *lexeme, int len);
 
 #endif
