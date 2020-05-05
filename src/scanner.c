@@ -34,15 +34,15 @@ Token *new_id_token(FILE *ifp);
 Keyword *binsearch(char *kwrd, Keyword *tab, int n);
 
 
-int scan(FILE *input, Token **tokens)
+Token *scan(FILE *input)
 {
-    int n;
     char c, next_c;
+    Token *token, *first;
 
-    n = 0;
+    first = token = NULL;
     while ((c = getc(input)) != EOF) {
         if (input == stdin && c == '\n')
-            return n;
+            return first;
 
         if (isspace(c))
             continue;
@@ -57,10 +57,16 @@ int scan(FILE *input, Token **tokens)
             }
         }
 
-        tokens[n++] = get_token(c, input);
+        if (token == NULL) {
+            first = token = get_token(c, input);
+        } else {
+            token->next = get_token(c, input);
+            token->next->prev = token;
+            token = token->next;
+        }
     }
 
-    return n;
+    return first;
 }
 
 
@@ -138,6 +144,9 @@ Token *new_token(int type, char *lexeme, int len)
 {
     Token *token = (Token *) malloc(sizeof(Token));
     
+    token->next = NULL;
+    token->prev = NULL;
+
     token->type = type;
     token->lexeme = lexeme;
     token->lineno = 1;

@@ -6,9 +6,8 @@
 
 int main(int argc, char *argv[])
 {
-    int i, n;
     FILE *source;
-    Token *tokens[MAXTOKEN];
+    Token *token;
 
     if (argc == 2) {
         source = fopen(argv[1], "rb");
@@ -24,11 +23,9 @@ int main(int argc, char *argv[])
 
     for (;;) {
         printf("lox > ");
-        n = scan(source, tokens);
 
-        for (i = 0; i < n; i++) {
-            printf("Token(type=%d, lexeme='%s')\n", tokens[i]->type, tokens[i]->lexeme);
-        }
+        for (token = scan(source); token != NULL; token = token->next)
+            printf("Token(type=%d, lexeme='%s')\n", token->type, token->lexeme);
 
         if (feof(source))
             break;

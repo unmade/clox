@@ -54,7 +54,9 @@ typedef struct {
 } Keyword;
 
 
-typedef struct {
+typedef struct token {
+    struct token *next;
+    struct token *prev;
     TokenType type;
     int lineno;
     int len;
@@ -62,7 +64,7 @@ typedef struct {
 } Token;
 
 
-int scan(FILE *input, Token **tokens);
+Token *scan(FILE *input);
 Token *new_token(int type, char *lexeme, int len);
 
 #endif
