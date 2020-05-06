@@ -2,12 +2,14 @@
 #include <stdlib.h>
 
 #include "expr.h"
+#include "parser.h"
 #include "scanner.h"
 
 int main(int argc, char *argv[])
 {
     FILE *source;
-    Token *token;
+    Token *tokens;
+    Expr *expr;
 
     if (argc == 2) {
         source = fopen(argv[1], "rb");
@@ -21,11 +23,18 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    char s[128];
     for (;;) {
         printf("lox > ");
 
-        for (token = scan(source); token != NULL; token = token->next)
-            printf("Token(type=%d, lexeme='%s')\n", token->type, token->lexeme);
+        tokens = scan(source);
+        expr = parse(tokens);
+
+        s[0] = '\0';
+        if (expr != NULL) {
+            str_expr(s, expr);
+            printf("expr = %s\n", s);
+        }
 
         if (feof(source))
             break;
