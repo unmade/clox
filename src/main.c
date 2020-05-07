@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "parser.h"
 #include "scanner.h"
+#include "interpreter.h"
 
 int main(int argc, char *argv[])
 {
@@ -24,19 +25,23 @@ int main(int argc, char *argv[])
     }
 
     char s[128];
-    Token *tok;
+    ExprResult *res;
     for (;;) {
         printf("lox > ");
 
-        tokens = scan(source);
-        for (tok = tokens; tok != NULL; tok = tok->next)
-            printf("Token(type=%d, lexeme='%s')\n", tok->type, tok->lexeme);
+        if ((tokens = scan(source)) == NULL) 
+            continue;
+
         expr = parse(tokens);
 
-        s[0] = '\0';
         if (expr != NULL) {
-            str_expr(s, expr);
-            printf("expr = %s\n", s);
+            if ((res = eval(expr)) != NULL) {
+                s[0] = '\0';
+                str_expr_res(s, res);
+                printf("%s\n", s);
+            } else {
+                fprintf(stderr, "RuntimeError\n");
+            }
         } else {
             fprintf(stderr, "Error: invalid expression\n");
         }
