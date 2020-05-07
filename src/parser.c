@@ -61,8 +61,11 @@ static Expr *equality(struct tokenlist *tlist)
 
         if (token->type == TOKEN_BANG_EQUAL || token->type == TOKEN_EQUAL_EQUAL) {
             get_token(tlist);
-            if ((right = comparison(tlist)) == NULL)
+
+            if ((right = comparison(tlist)) == NULL) {
                 return NULL;
+            }
+
             expr = new_binary_expr(expr, token, right);
             continue;
         }
@@ -104,7 +107,6 @@ static Expr *comparison(struct tokenlist *tlist)
 
 static Expr *addition(struct tokenlist *tlist)
 {
-
     Expr *expr, *right;
     Token *token;
 
@@ -188,15 +190,22 @@ static Expr *primary(struct tokenlist *tlist)
         if (token->type == TOKEN_ERROR)
             return NULL;
 
+
         if (token->type == TOKEN_LEFT_PAREN) {
-            expr = expression(tlist);
+            if ((expr = expression(tlist)) == NULL)
+                return NULL;
+
             token = get_token(tlist);
             if (token == NULL || (token != NULL && token->type != TOKEN_RIGHT_PAREN))
                 return NULL;
+
             return expr;
         }
 
-        return new_literal_expr(token);
+        if (token->type == TOKEN_FALSE || token->type == TOKEN_NIL \
+            || token->type == TOKEN_NUMBER || token->type == TOKEN_STRING \
+            || token->type == TOKEN_TRUE)
+            return new_literal_expr(token);
     }
 
     return NULL;

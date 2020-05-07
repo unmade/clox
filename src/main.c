@@ -24,16 +24,21 @@ int main(int argc, char *argv[])
     }
 
     char s[128];
+    Token *tok;
     for (;;) {
         printf("lox > ");
 
         tokens = scan(source);
+        for (tok = tokens; tok != NULL; tok = tok->next)
+            printf("Token(type=%d, lexeme='%s')\n", tok->type, tok->lexeme);
         expr = parse(tokens);
 
         s[0] = '\0';
         if (expr != NULL) {
             str_expr(s, expr);
             printf("expr = %s\n", s);
+        } else {
+            fprintf(stderr, "Error: invalid expression\n");
         }
 
         if (feof(source))
