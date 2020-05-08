@@ -58,13 +58,11 @@ typedef struct token {
     struct token *next;
     struct token *prev;
     TokenType type;
-    int lineno;
-    int len;
     char *lexeme;
+    int lineno;
 } Token;
 
 
 Token *scan(FILE *input);
-Token *new_token(int type, char *lexeme, int len);
 
 #endif

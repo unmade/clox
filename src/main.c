@@ -27,6 +27,9 @@ int main(int argc, char *argv[])
     char s[128];
     ExprResult *res;
     for (;;) {
+        if (feof(source))
+            break;
+
         printf("lox > ");
 
         if ((tokens = scan(source)) == NULL) 
@@ -45,9 +48,6 @@ int main(int argc, char *argv[])
         } else {
             fprintf(stderr, "Error: invalid expression\n");
         }
-
-        if (feof(source))
-            break;
     }
 
     fclose(source);
