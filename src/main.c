@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
     FILE *source;
     Token *tokens;
     Expr *expr;
+    ExprResult *res;
 
     if (argc == 2) {
         source = fopen(argv[1], "rb");
@@ -24,8 +25,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    char s[128];
-    ExprResult *res;
     for (;;) {
         if (feof(source))
             break;
@@ -38,13 +37,10 @@ int main(int argc, char *argv[])
         expr = parse(tokens);
 
         if (expr != NULL) {
-            if ((res = eval(expr)) != NULL) {
-                s[0] = '\0';
-                str_expr_res(s, res);
-                printf("%s\n", s);
-            } else {
+            if ((res = eval(expr)) != NULL)
+                print_expr_res(res);
+            else
                 fprintf(stderr, "RuntimeError\n");
-            }
         } else {
             fprintf(stderr, "Error: invalid expression\n");
         }

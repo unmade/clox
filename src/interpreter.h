@@ -22,6 +22,7 @@ typedef struct {
 
 
 ExprResult *eval(Expr *expr);
-char *str_expr_res(char *s, ExprResult *res);
+char *str_expr_res(const ExprResult *res);
+void print_expr_res(const ExprResult *res);
 
 #endif

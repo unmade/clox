@@ -162,22 +162,34 @@ ExprResult *eval(Expr *expr)
 }
 
 
-char *str_expr_res(char *s, ExprResult *res)
+char *str_expr_res(const ExprResult *res)
 {
+    char *s;
+    size_t flen;
+
     switch (res->type) {
         case RESULT_BOOL:
-            (res->ival) ? strcat(s, "true") : strcat(s, "false");
-            return s;
+            return strdup((res->ival) ? "true" : "false");
         case RESULT_NUMBER:
+            flen = snprintf(NULL, 0, "%f", res->fval);
+            s = (char *) malloc(flen * sizeof(char));
             sprintf(s, "%f", res->fval);
             return s;
         case RESULT_STRING:
-            strcat(s, res->sval);
-            return s;
+            return strdup(res->sval);
         case RESULT_NIL:
-            strcat(s, "nil");
-            return s;
+            return strdup("nil");
         default:
             return NULL;
     }
+}
+
+
+void print_expr_res(const ExprResult *res)
+{
+    char *s;
+
+    s = str_expr_res(res);
+    printf("%s\n", s);
+    free(s);
 }
