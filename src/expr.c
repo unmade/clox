@@ -1,11 +1,20 @@
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "scanner.h"
 #include "expr.h"
 
-static char *paren(char *str, char *name, int exprc, ...);
+static int _str_expr(char *s, unsigned len, unsigned *maxlen, const Expr *expr);
+static int cat_expr(
+    char *s,
+    unsigned len,
+    unsigned *maxlen,
+    const char *name,
+    unsigned exprc,
+    ...
+);
 
 
 Expr *new_binary_expr(Expr *left, Token *op, Expr *right)
@@ -55,50 +64,75 @@ Expr *new_unary_expr(Token *op, Expr *right)
 }
 
 
-char *str_expr(char *str, Expr *expr)
+char *str_expr(const Expr *expr)
 {
-    char *s = str; 
+    unsigned len = 0;
+    unsigned maxlen = 8;
+    char *s = (char *) malloc(maxlen * sizeof(char));
 
-    switch(expr->type) {
-        case EXPR_BINARY:
-            paren(str, expr->binary.op->lexeme, 2, expr->binary.left, expr->binary.right);
-            break;
-        case EXPR_GROUPING:
-            paren(str, "group", 1, expr->grouping);
-            break;
-        case EXPR_LITERAL:
-            strcat(s, expr->literal->lexeme);
-            break;
-        case EXPR_UNARY:
-            paren(str, expr->unary.op->lexeme, 1, expr->unary.right);
-            break;
-        default:
-            break;
-    }
-
-    return str;
+    s[0] = '\0';
+    _str_expr(s, len, &maxlen, expr);
+    
+    return s;
 }
 
 
-static char *paren(char *str, char *name, int exprc, ...)
+static int _str_expr(char *s, unsigned len, unsigned *maxlen, const Expr *expr)
 {
+    switch(expr->type) {
+        case EXPR_BINARY:
+            return cat_expr(s, len, maxlen, expr->binary.op->lexeme,
+                            2, expr->binary.left, expr->binary.right);
+        case EXPR_GROUPING:
+            return cat_expr(s, len, maxlen, "group",
+                            1, expr->grouping);
+        case EXPR_LITERAL:
+            return cat_expr(s, len, maxlen, expr->literal->lexeme, 0);
+        case EXPR_UNARY:
+            return cat_expr(s, len, maxlen, expr->unary.op->lexeme,
+                            1, expr->unary.right);
+        default:
+            return len;
+    }
+}
+
+
+static int cat_expr(
+    char *s, 
+    unsigned len,
+    unsigned *maxlen,
+    const char *name,
+    unsigned exprc,
+    ...
+) {
     Expr *expr;
     va_list exprs;
+    unsigned nlen = (len + strlen(name) + 3);
+    bool need_paren = (exprc > 0);
 
-    strcat(str, "(");
-    strcat(str, name);
+    if (*maxlen < nlen)
+        while (*maxlen < nlen)
+            s = (char *) realloc(s, (*maxlen *= 2) * sizeof(char));
+
+    if (need_paren)
+        strcat(s + len++, "(");
+
+    while ((s[len++] = *name++))
+        ;
+    --len;
 
     va_start(exprs, exprc);
 
     while (exprc--) {
-        strcat(str, " ");
+        strcat(s + len++, " ");
         expr = va_arg(exprs, Expr *);
-        str_expr(str, expr);
+        len = _str_expr(s, len, maxlen, expr);
     }
 
     va_end(exprs);
 
-    strcat(str, ")");
+    if (need_paren)
+        strcat(s + len++, ")");
 
-    return str;
+    return len;
 }
