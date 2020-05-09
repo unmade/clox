@@ -6,11 +6,11 @@
 #include "scanner.h"
 #include "expr.h"
 
-static int _str_expr(char *s, unsigned len, unsigned *maxlen, const Expr *expr);
-static int cat_expr(
+static int _str_expr(char *s, unsigned len, size_t *maxlen, const Expr *expr);
+static int join_expr(
     char *s,
     unsigned len,
-    unsigned *maxlen,
+    size_t *maxlen,
     const char *name,
     unsigned exprc,
     ...
@@ -64,10 +64,20 @@ Expr *new_unary_expr(Token *op, Expr *right)
 }
 
 
+void print_expr(const Expr *expr)
+{
+    char *s;
+
+    s = str_expr(expr);
+    printf("%s\n", s);
+    free(s);
+}
+
+
 char *str_expr(const Expr *expr)
 {
     unsigned len = 0;
-    unsigned maxlen = 8;
+    size_t maxlen = 8;
     char *s = (char *) malloc(maxlen * sizeof(char));
 
     s[0] = '\0';
@@ -77,19 +87,19 @@ char *str_expr(const Expr *expr)
 }
 
 
-static int _str_expr(char *s, unsigned len, unsigned *maxlen, const Expr *expr)
+static int _str_expr(char *s, unsigned len, size_t *maxlen, const Expr *expr)
 {
     switch(expr->type) {
         case EXPR_BINARY:
-            return cat_expr(s, len, maxlen, expr->binary.op->lexeme,
+            return join_expr(s, len, maxlen, expr->binary.op->lexeme,
                             2, expr->binary.left, expr->binary.right);
         case EXPR_GROUPING:
-            return cat_expr(s, len, maxlen, "group",
+            return join_expr(s, len, maxlen, "group",
                             1, expr->grouping);
         case EXPR_LITERAL:
-            return cat_expr(s, len, maxlen, expr->literal->lexeme, 0);
+            return join_expr(s, len, maxlen, expr->literal->lexeme, 0);
         case EXPR_UNARY:
-            return cat_expr(s, len, maxlen, expr->unary.op->lexeme,
+            return join_expr(s, len, maxlen, expr->unary.op->lexeme,
                             1, expr->unary.right);
         default:
             return len;
@@ -97,16 +107,17 @@ static int _str_expr(char *s, unsigned len, unsigned *maxlen, const Expr *expr)
 }
 
 
-static int cat_expr(
+static int join_expr(
     char *s, 
     unsigned len,
-    unsigned *maxlen,
+    size_t *maxlen,
     const char *name,
     unsigned exprc,
     ...
 ) {
     Expr *expr;
     va_list exprs;
+
     unsigned nlen = (len + strlen(name) + 3);
     bool need_paren = (exprc > 0);
 
