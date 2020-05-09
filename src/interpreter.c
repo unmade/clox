@@ -4,15 +4,16 @@
 
 #include "expr.h"
 #include "interpreter.h"
+#include "loxobj.h"
 #include "scanner.h"
 
-static bool is_truthy(const ExprResult *res);
-static ExprResult *eval_unary(const Expr *expr);
-static ExprResult *eval_literal(const Expr *expr);
-static ExprResult *eval_binary(const Expr *expr);
+static LoxObj *eval_unary(const Expr *expr);
+static LoxObj *eval_literal(const Expr *expr);
+static LoxObj *eval_binary(const Expr *expr);
+static char *joinstr(const char *s1, const char *s2);
 
 
-ExprResult *eval(const Expr *expr)
+LoxObj *eval(const Expr *expr)
 {
     switch(expr->type) {
         case EXPR_GROUPING:
@@ -29,50 +30,20 @@ ExprResult *eval(const Expr *expr)
 }
 
 
-void free_expr_res(ExprResult *res)
+static LoxObj *eval_unary(const Expr *expr) 
 {
-    switch (res->type) {
-        case RESULT_NUMBER:
-        case RESULT_BOOL:
-        case RESULT_NIL:
-            free(res);
-            break;
-        case RESULT_STRING:
-            free(res->sval);
-            break;
-        default:
-            break;
-    }
-}
-
-
-static bool is_truthy(const ExprResult *res) 
-{
-    switch (res->type) {
-        case RESULT_BOOL:
-            return (res->bval == true);
-        default:
-            return false;
-    }
-}
-
-
-static ExprResult *eval_unary(const Expr *expr) 
-{
-    ExprResult *right, *res;
+    LoxObj *right, *obj;
 
     if ((right = eval(expr->unary.right)) == NULL)
         return NULL;
 
     switch (expr->unary.op->type) {
         case TOKEN_BANG:
-            res = (ExprResult *) malloc(sizeof(ExprResult));
-            res->type = RESULT_BOOL;
-            res->bval = !is_truthy(right);
-            free_expr_res(right);
-            return res;
+            obj = new_bool_obj(!is_obj_truthy(right));
+            free_obj(right);
+            return obj;
         case TOKEN_MINUS:
-            if (right->type != RESULT_NUMBER)
+            if (right->type != LOX_OBJ_NUMBER)
                 return NULL;
             right->fval *= -1;
             return right;
@@ -82,42 +53,29 @@ static ExprResult *eval_unary(const Expr *expr)
 }
 
 
-static ExprResult *eval_literal(const Expr *expr)
+static LoxObj *eval_literal(const Expr *expr)
 {
-    ExprResult *res = (ExprResult *) malloc(sizeof(ExprResult));
-
     switch (expr->literal->type) {
         case TOKEN_NUMBER:
-            res->type = RESULT_NUMBER;
-            res->fval = atof(expr->literal->lexeme);
-            return res;
+            return new_num_obj(atof(expr->literal->lexeme));
         case TOKEN_STRING:
-            res->type = RESULT_STRING;
-            res->sval = strdup(expr->literal->lexeme);
-            return res;
+            return new_str_obj(strdup(expr->literal->lexeme));
         case TOKEN_FALSE:
-            res->type = RESULT_BOOL;
-            res->bval = false;
-            return res;
+            return new_bool_obj(false);
         case TOKEN_TRUE:
-            res->type = RESULT_BOOL;
-            res->bval = true;
-            return res;
+            return new_bool_obj(true);
         case TOKEN_NIL:
-            res->type = RESULT_NIL;
-            return res;
+            return new_nil_obj();
         default:
-            free(res);
             return NULL;
     }
 }
 
 
-static ExprResult *eval_binary(const Expr *expr)
+static LoxObj *eval_binary(const Expr *expr)
 {
-    // there must be a better way!
-
-    ExprResult *left, *right, *res;
+    LoxObj *left, *right;
+    LoxObj *obj = NULL;
 
     if ((left = eval(expr->binary.left)) == NULL)
         return NULL;
@@ -125,80 +83,47 @@ static ExprResult *eval_binary(const Expr *expr)
     if ((right = eval(expr->binary.right)) == NULL)
         return NULL;
 
-    res = (ExprResult *) malloc(sizeof(ExprResult));
-
     switch (expr->binary.op->type) {
         case TOKEN_MINUS:
-            if (left->type == RESULT_NUMBER && right->type == RESULT_NUMBER) {
-                res->type = RESULT_NUMBER;
-                res->fval = left->fval - right->fval;
-                return res;
-            }
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_num_obj(left->fval - right->fval);
             break;
         case TOKEN_SLASH:
-            if (left->type == RESULT_NUMBER && right->type == RESULT_NUMBER) {
-                res->type = RESULT_NUMBER;
-                res->fval = left->fval / right->fval;
-                return res;
-            }
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_num_obj(left->fval / right->fval);
             break;
         case TOKEN_STAR:
-            if (left->type == RESULT_NUMBER && right->type == RESULT_NUMBER) {
-                res->type = RESULT_NUMBER;
-                res->fval = left->fval * right->fval;
-                return res;
-            }
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_num_obj(left->fval * right->fval); 
             break;
         case TOKEN_PLUS:
-            if (left->type == RESULT_NUMBER && right->type == RESULT_NUMBER) {
-                res->type = RESULT_NUMBER;
-                res->fval = left->fval + right->fval;
-                return res;
-            } else if (left->type == RESULT_STRING && right->type == RESULT_STRING) {
-                res->type = RESULT_STRING;
-                res->sval = (char *) malloc((strlen(left->sval) + strlen(right->sval)) * sizeof(char));
-                strcat(res->sval, left->sval);
-                strcat(res->sval, right->sval);
-                return res; 
-            }
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_num_obj(left->fval + right->fval);
+            else if (left->type == LOX_OBJ_STRING && right->type == LOX_OBJ_STRING)
+                obj = new_str_obj(joinstr(left->sval, right->sval));
             break;
         default:
             break;
     }
 
-    free(res);
-    return NULL;
+    free_obj(left);
+    free_obj(right);
+
+    return obj;
 }
 
 
-char *str_expr_res(const ExprResult *res)
+static char *joinstr(const char *s1, const char *s2)
 {
-    char *s;
-    size_t flen;
-
-    switch (res->type) {
-        case RESULT_BOOL:
-            return strdup((res->bval) ? "true" : "false");
-        case RESULT_NUMBER:
-            flen = snprintf(NULL, 0, "%f", res->fval);
-            s = (char *) malloc(flen * sizeof(char));
-            sprintf(s, "%f", res->fval);
-            return s;
-        case RESULT_STRING:
-            return strdup(res->sval);
-        case RESULT_NIL:
-            return strdup("nil");
-        default:
-            return NULL;
-    }
-}
-
-
-void print_expr_res(const ExprResult *res)
-{
+    int len1, len2;
     char *s;
 
-    s = str_expr_res(res);
-    printf("%s\n", s);
-    free(s);
+    len1 = strlen(s1);
+    len2 = strlen(s2);
+
+    s = (char *) malloc((len1 + len2) * sizeof(char));
+    strcat(s, s1);
+    strcat(s + len1, s2);
+
+    return s;
 }

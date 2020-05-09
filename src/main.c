@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     FILE *source;
     Token *tokens;
     Expr *expr;
-    ExprResult *res;
+    LoxObj *obj;
 
     if (argc == 2) {
         source = fopen(argv[1], "rb");
@@ -34,16 +34,17 @@ int main(int argc, char *argv[])
         if ((tokens = scan(source)) == NULL) 
             continue;
 
-        expr = parse(tokens);
-
-        if (expr != NULL) {
-            if ((res = eval(expr)) != NULL)
-                print_expr_res(res);
-            else
-                fprintf(stderr, "RuntimeError\n");
-        } else {
-            fprintf(stderr, "Error: invalid expression\n");
+        if ((expr = parse(tokens)) == NULL) {
+            fprintf(stderr, "Error: invalid expression\n"); 
+            continue;
         }
+
+        if ((obj = eval(expr)) == NULL) {
+            fprintf(stderr, "RuntimeError\n");
+            continue;
+        }
+
+        print_obj(obj);
     }
 
     fclose(source);
