@@ -1,6 +1,8 @@
 #ifndef clox_interpreter_h
 #define clox_interpreter_h
 
+#include <stdbool.h>
+
 #include "expr.h"
 
 enum ExprResultType {
@@ -14,14 +16,15 @@ enum ExprResultType {
 typedef struct {
     enum ExprResultType type;
     union {
-        int ival;
+        bool bval;
         float fval;
         char *sval;
     };
 } ExprResult;
 
 
-ExprResult *eval(Expr *expr);
+ExprResult *eval(const Expr *expr);
+void free_expr_res(ExprResult *res);
 char *str_expr_res(const ExprResult *res);
 void print_expr_res(const ExprResult *res);
 

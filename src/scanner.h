@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 
-#define MAXTOKEN 100
-
 typedef enum {
     TOKEN_LEFT_PAREN = 0,
     TOKEN_RIGHT_PAREN,
