@@ -3,8 +3,8 @@
 
 #include "expr.h"
 #include "loxobj.h"
+#include "stmt.h"
 
-
-LoxObj *eval(const Expr *expr);
+int interpret(Stmt **stmt);
 
 #endif

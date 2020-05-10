@@ -1,10 +1,16 @@
+#include <stdlib.h>
+
 #include "expr.h"
 #include "scanner.h"
+#include "stmt.h"
 
 struct tokenlist {
     Token *curr;
 };
 
+static Stmt *statement(struct tokenlist *tlist);
+static Stmt *print_stmt(struct tokenlist *tlist);
+static Stmt *expr_stmt(struct tokenlist *tlist);
 static Expr *expression(struct tokenlist *tlist);
 static Expr *equality(struct tokenlist *tlist);
 static Expr *comparison(struct tokenlist *tlist);
@@ -16,8 +22,14 @@ static Expr *primary(struct tokenlist *tlist);
 
 static Token *get_token(struct tokenlist *tlist)
 {
-    Token *prev = tlist->curr;
+    Token *prev;
+
+    if ((prev = tlist->curr) == NULL)
+        return NULL;
+
+    prev = tlist->curr;
     tlist->curr = tlist->curr->next;
+
     return prev;
 }
 
@@ -28,16 +40,72 @@ static Token *peek_token(struct tokenlist *tlist)
 }
 
 
-Expr *parse(Token *tokens)
+Stmt **parse(Token *tokens)
 {
+    int i;
     struct tokenlist tlist;
+    Stmt *stmt, **stmts;
 
     if (tokens == NULL)
         return NULL;
 
     tlist.curr = tokens;
+    stmts = (Stmt **) malloc(128 * sizeof(Stmt *));
 
-    return expression(&tlist);    
+    for (i = 0; peek_token(&tlist) != NULL; i++)
+        if ((stmt = statement(&tlist)) != NULL)
+            stmts[i++] = stmt;
+
+    stmts[i] = NULL;
+
+    return stmts;
+}
+
+
+static Stmt *statement(struct tokenlist *tlist)
+{
+    Token *token;
+
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type == TOKEN_PRINT)
+        return print_stmt(tlist);
+
+    return expr_stmt(tlist);
+}
+
+
+static Stmt *print_stmt(struct tokenlist *tlist)
+{
+    Token *token;
+    Expr *expr;
+
+    if ((expr = expression(tlist)) == NULL)
+        return NULL;
+
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type != TOKEN_SEMICOLON)
+        return NULL;
+
+    return new_print_stmt(expr);
+}
+
+
+static Stmt *expr_stmt(struct tokenlist *tlist)
+{ 
+    Token *token;
+    Expr *expr;
+
+    if ((expr = expression(tlist)) == NULL)
+        return NULL;
+
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    return new_expr_stmt(expr);
 }
 
 

@@ -6,16 +6,56 @@
 #include "interpreter.h"
 #include "loxobj.h"
 #include "scanner.h"
+#include "stmt.h"
 
+static int exec(Stmt *stmt);
+static int exec_print_stmt(Stmt *stmt);
+static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
 static char *joinstr(const char *s1, const char *s2);
 
 
-LoxObj *eval(const Expr *expr)
+int interpret(Stmt **stmt)
 {
-    switch(expr->type) {
+    int i, code;
+
+    for (i = 0; stmt[i] != NULL; i++) 
+        if ((code = exec(stmt[i])) != 0)
+            return code;
+
+    return 0;
+}
+
+
+static int exec(Stmt *stmt)
+{
+    switch (stmt->type) {
+        case STMT_PRINT:
+            return exec_print_stmt(stmt);
+        default:
+            return 1;
+    };
+}
+
+
+static int exec_print_stmt(Stmt *stmt)
+{
+    LoxObj *obj;
+
+    if ((obj = eval(stmt->expr)) == NULL)
+        return 1;
+
+    print_obj(obj);
+
+    return 0;
+}
+
+
+static LoxObj *eval(const Expr *expr)
+{
+    switch (expr->type) {
         case EXPR_GROUPING:
             return eval(expr->grouping);
         case EXPR_UNARY:

@@ -2,7 +2,8 @@
 #define clox_parser_h
 
 #include "scanner.h"
+#include "stmt.h"
 
-Expr *parse(Token *tokens);
+Stmt **parse(Token *tokens);
 
 #endif

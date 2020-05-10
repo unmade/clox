@@ -2,15 +2,16 @@
 #include <stdlib.h>
 
 #include "expr.h"
+#include "interpreter.h"
 #include "parser.h"
 #include "scanner.h"
-#include "interpreter.h"
+#include "stmt.h"
 
 int main(int argc, char *argv[])
 {
     FILE *source;
     Token *tokens;
-    Expr *expr;
+    Stmt **stmts;
     LoxObj *obj;
 
     if (argc == 2) {
@@ -34,17 +35,15 @@ int main(int argc, char *argv[])
         if ((tokens = scan(source)) == NULL) 
             continue;
 
-        if ((expr = parse(tokens)) == NULL) {
-            fprintf(stderr, "Error: invalid expression\n"); 
+        if ((stmts = parse(tokens)) == NULL) {
+            fprintf(stderr, "Error: invalid statement\n"); 
             continue;
         }
 
-        if ((obj = eval(expr)) == NULL) {
+        if (interpret(stmts) != 0) {
             fprintf(stderr, "RuntimeError\n");
             continue;
         }
-
-        print_obj(obj);
     }
 
     fclose(source);
