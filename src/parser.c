@@ -45,23 +45,29 @@ static Token *peek_token(struct tokenlist *tlist)
 Stmt **parse(Token *tokens)
 {
     int i;
-    size_t stmt_size;
+    size_t n;
+    bool has_error;
     struct tokenlist tlist;
     Stmt *stmt, **stmts;
-    bool has_error;
+    Token *token;
 
     if (tokens == NULL)
         return NULL;
 
+    n = 1;
+    for (token = tokens; token != NULL; token = token->next)
+        if (token->type == TOKEN_SEMICOLON)
+            n++;
+    stmts = (Stmt **) malloc((n + 1) * sizeof(Stmt *));
+
     tlist.curr = tokens;
-    stmts = (Stmt **) malloc(128 * sizeof(Stmt *));
 
     has_error = false;
     for (i = 0; peek_token(&tlist) != NULL; i++)
         if ((stmt = statement(&tlist)) == NULL)
             has_error = true;
         else
-            stmts[i++] = stmt;
+            stmts[i] = stmt;
 
     if (has_error) {
         while (--i) 
@@ -70,7 +76,7 @@ Stmt **parse(Token *tokens)
         return NULL;
     }
 
-    stmts[i] = NULL;
+    stmts[i++] = NULL;
 
     return stmts;
 }
