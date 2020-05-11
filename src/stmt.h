@@ -5,6 +5,7 @@
 
 enum StmtType {
     STMT_EXPR = 0,
+    STMT_ERROR,
     STMT_PRINT,
 };
 
@@ -17,6 +18,8 @@ typedef struct stmt {
 } Stmt;
 
 Stmt *new_expr_stmt(Expr *expr);
+Stmt *new_error_stmt(Expr *expr);
 Stmt *new_print_stmt(Expr *expr);
+void free_stmt(Stmt *stmt);
 
 #endif

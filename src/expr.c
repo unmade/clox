@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "scanner.h"
 #include "expr.h"
+#include "scanner.h"
 
 static int _str_expr(char *s, unsigned len, size_t *maxlen, const Expr *expr);
 static int join_expr(

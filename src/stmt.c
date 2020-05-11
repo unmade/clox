@@ -24,3 +24,9 @@ Stmt *new_print_stmt(Expr *expr)
 
     return stmt;
 }
+
+
+void free_stmt(Stmt *stmt)
+{
+    free(stmt);
+}

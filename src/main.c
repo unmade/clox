@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
     FILE *source;
     Token *tokens;
     Stmt **stmts;
-    LoxObj *obj;
 
     if (argc == 2) {
         source = fopen(argv[1], "rb");
@@ -35,15 +34,11 @@ int main(int argc, char *argv[])
         if ((tokens = scan(source)) == NULL) 
             continue;
 
-        if ((stmts = parse(tokens)) == NULL) {
-            fprintf(stderr, "Error: invalid statement\n"); 
+        if ((stmts = parse(tokens)) == NULL)
             continue;
-        }
 
-        if (interpret(stmts) != 0) {
-            fprintf(stderr, "RuntimeError\n");
+        if (interpret(stmts) != 0)
             continue;
-        }
     }
 
     fclose(source);

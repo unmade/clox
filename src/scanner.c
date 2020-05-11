@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "logger.h"
 #include "scanner.h"
 
 #define NKEYS (sizeof KEYWORDS / sizeof(KEYWORDS[0]))
@@ -65,6 +66,10 @@ Token *scan(FILE *input)
             token = token->next;
         }
     }
+
+    for (token = first; token != NULL; token = token->next)
+        if (token->type == TOKEN_ERROR)
+            return NULL;
 
     return first;
 }
@@ -135,6 +140,7 @@ static Token *get_token(int c, FILE *ifp)
                 ungetc(c, ifp);
                 return new_id_token(ifp);
             }
+            log_error(LOX_SYNTAX_ERR, "unexpected character: '%c'.", c);
             return new_token(TOKEN_ERROR, NULL);
    }
 }
@@ -167,8 +173,10 @@ static Token *new_str_token(FILE *ifp)
 
     s = read_while(ifp, is_char);
 
-    if ((c = getc(ifp)) != '"')
+    if ((c = getc(ifp)) != '"') {
+        log_error(LOX_SYNTAX_ERR, "EOF while scanning string literal.");
         return new_token(TOKEN_ERROR, s);
+    }
 
     return new_token(TOKEN_STRING, s);
 }
