@@ -26,6 +26,18 @@ Stmt *new_print_stmt(Expr *expr)
 }
 
 
+Stmt *new_var_stmt(char *name, Expr *expr)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_VAR;
+    stmt->var.name = name;
+    stmt->var.expr = expr;
+
+    return stmt;
+}
+
+
 void free_stmt(Stmt *stmt)
 {
     free(stmt);

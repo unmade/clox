@@ -24,8 +24,10 @@ int interpret(Stmt **stmts)
     int i, code;
 
     for (i = 0; stmts[i] != NULL; i++) 
-        if ((code = exec(stmts[i])) != 0)
+        if ((code = exec(stmts[i])) != 0) {
+            log_error(LOX_RUNTIME_ERR, "invalid statement");
             return code;
+        }
 
     return 0;
 }

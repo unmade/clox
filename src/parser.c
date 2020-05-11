@@ -10,6 +10,8 @@ struct tokenlist {
     Token *curr;
 };
 
+static Stmt *declaration(struct tokenlist *tlist);
+static Stmt *var_declaration(struct tokenlist *tlist);
 static Stmt *statement(struct tokenlist *tlist);
 static Stmt *print_stmt(struct tokenlist *tlist);
 static Stmt *expr_stmt(struct tokenlist *tlist);
@@ -64,7 +66,7 @@ Stmt **parse(Token *tokens)
 
     has_error = false;
     for (i = 0; peek_token(&tlist) != NULL; i++)
-        if ((stmt = statement(&tlist)) == NULL)
+        if ((stmt = declaration(&tlist)) == NULL)
             has_error = true;
         else
             stmts[i] = stmt;
@@ -82,6 +84,63 @@ Stmt **parse(Token *tokens)
 }
 
 
+static Stmt *declaration(struct tokenlist *tlist)
+{
+    Token *token;
+    Stmt *stmt;
+
+    if ((token = peek_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type == TOKEN_VAR) {
+        get_token(tlist);
+        stmt = var_declaration(tlist);
+    } else {
+        stmt = statement(tlist);
+    }
+
+    if ((token = get_token(tlist)) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
+        return NULL;
+    }
+
+    if (token->type != TOKEN_SEMICOLON) {
+        log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
+        return NULL;
+    }
+
+    return stmt;
+}
+
+
+static Stmt *var_declaration(struct tokenlist *tlist)
+{
+    char *name;
+    Token *token;
+    Expr *expr;
+
+    token = get_token(tlist);
+    if (token == NULL || (token != NULL && token->type != TOKEN_IDENTIFIER)) {
+        log_error(LOX_SYNTAX_ERR, "expected variable name after 'var'");
+        return NULL;
+    }
+
+    name = token->lexeme;
+
+    if ((token = peek_token(tlist)) == NULL) 
+        return NULL;
+
+    expr = NULL;
+    if (token->type == TOKEN_EQUAL) {
+        get_token(tlist);
+        if ((expr = expression(tlist)) == NULL)
+            return NULL;
+    }
+
+    return new_var_stmt(name, expr);
+}
+
+
 static Stmt *statement(struct tokenlist *tlist)
 {
     Token *token;
@@ -95,16 +154,6 @@ static Stmt *statement(struct tokenlist *tlist)
         stmt = print_stmt(tlist);
     } else {
         stmt = expr_stmt(tlist);
-    }
-
-    if ((token = get_token(tlist)) == NULL) {
-        log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
-        return NULL;
-    }
-
-    if (token->type != TOKEN_SEMICOLON) {
-        log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
-        return NULL;
     }
 
     return stmt;
@@ -282,7 +331,7 @@ static Expr *primary(struct tokenlist *tlist)
 
     if (token->type == TOKEN_FALSE || token->type == TOKEN_NIL \
         || token->type == TOKEN_NUMBER || token->type == TOKEN_STRING \
-        || token->type == TOKEN_TRUE)
+        || token->type == TOKEN_TRUE || token->type == TOKEN_IDENTIFIER)
         return new_literal_expr(token);
 
     log_error(LOX_SYNTAX_ERR, "invalid syntax");
