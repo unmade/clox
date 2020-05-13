@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "environment.h"
 #include "expr.h"
 #include "interpreter.h"
 #include "logger.h"
@@ -12,16 +13,21 @@
 static int exec(Stmt *stmt);
 static int exec_print_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
+static int exec_var_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
 static char *joinstr(const char *s1, const char *s2);
 
+static LoxEnv *ENV = NULL;
 
 int interpret(Stmt **stmts)
 {
     int i, code;
+
+    if (ENV == NULL)
+        ENV = new_env();
 
     for (i = 0; stmts[i] != NULL; i++) 
         if ((code = exec(stmts[i])) != 0) {
@@ -40,6 +46,8 @@ static int exec(Stmt *stmt)
             return exec_print_stmt(stmt);
         case STMT_EXPR:
             return exec_expr_stmt(stmt);
+        case STMT_VAR:
+            return exec_var_stmt(stmt);
         default:
             return 1;
     };
@@ -62,6 +70,23 @@ static int exec_print_stmt(Stmt *stmt)
 static int exec_expr_stmt(Stmt *stmt)
 {
     return (eval(stmt->expr) != NULL);
+}
+
+
+static int exec_var_stmt(Stmt *stmt)
+{
+    LoxObj *obj;
+
+    if (stmt->var.expr != NULL) {
+        if ((obj = eval(stmt->var.expr)) == NULL)
+            return 1;
+    } else {
+        obj = new_nil_obj();
+    }
+
+    env_def(ENV, stmt->var.name, obj);
+
+    return 0;
 }
 
 
@@ -157,6 +182,8 @@ static LoxObj *eval_binary(const Expr *expr)
 
 static LoxObj *eval_literal(const Expr *expr)
 {
+    LoxObj *obj; 
+
     switch (expr->literal->type) {
         case TOKEN_NUMBER:
             return new_num_obj(atof(expr->literal->lexeme));
@@ -168,6 +195,10 @@ static LoxObj *eval_literal(const Expr *expr)
             return new_bool_obj(true);
         case TOKEN_NIL:
             return new_nil_obj();
+        case TOKEN_IDENTIFIER:
+            if ((obj = env_get(ENV, expr->literal->lexeme)) == NULL)
+                log_error(LOX_RUNTIME_ERR, "undefined variable '%s'", expr->literal->lexeme);
+            return obj;
         default:
             return NULL;
     }
