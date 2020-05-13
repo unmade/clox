@@ -14,6 +14,7 @@ static Stmt *declaration(struct tokenlist *tlist);
 static Stmt *var_declaration(struct tokenlist *tlist);
 static Stmt *statement(struct tokenlist *tlist);
 static Stmt *print_stmt(struct tokenlist *tlist);
+static Stmt *block_stmt(struct tokenlist *tlist);
 static Stmt *expr_stmt(struct tokenlist *tlist);
 static Expr *expression(struct tokenlist *tlist);
 static Expr *assignment(struct tokenlist *tlist);
@@ -61,7 +62,7 @@ Stmt **parse(Token *tokens)
     for (token = tokens; token != NULL; token = token->next)
         if (token->type == TOKEN_SEMICOLON)
             n++;
-    stmts = (Stmt **) malloc((n + 1) * sizeof(Stmt *));
+    stmts = (Stmt **) calloc(n + 1, sizeof(Stmt *));
 
     tlist.curr = tokens;
 
@@ -87,13 +88,15 @@ Stmt **parse(Token *tokens)
 
 static Stmt *declaration(struct tokenlist *tlist)
 {
+    int type;
+
     Token *token;
     Stmt *stmt;
 
     if ((token = peek_token(tlist)) == NULL)
         return NULL;
 
-    if (token->type == TOKEN_VAR) {
+    if ((type = token->type) == TOKEN_VAR) {
         get_token(tlist);
         stmt = var_declaration(tlist);
     } else {
@@ -105,10 +108,10 @@ static Stmt *declaration(struct tokenlist *tlist)
         return NULL;
     }
 
-    if (token->type != TOKEN_SEMICOLON) {
+    if (type != TOKEN_LEFT_BRACE && token->type != TOKEN_SEMICOLON) {
         log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
         return NULL;
-    }
+    } 
 
     return stmt;
 }
@@ -145,19 +148,20 @@ static Stmt *var_declaration(struct tokenlist *tlist)
 static Stmt *statement(struct tokenlist *tlist)
 {
     Token *token;
-    Stmt *stmt;
 
     if ((token = peek_token(tlist)) == NULL)
         return NULL;
 
-    if (token->type == TOKEN_PRINT) {
-        get_token(tlist);
-        stmt = print_stmt(tlist);
-    } else {
-        stmt = expr_stmt(tlist);
+    switch (token->type) {
+        case TOKEN_LEFT_BRACE:
+            get_token(tlist);
+            return block_stmt(tlist);
+        case TOKEN_PRINT:
+            get_token(tlist);
+            return print_stmt(tlist);
+        default:
+            return expr_stmt(tlist);
     }
-
-    return stmt;
 }
 
 
@@ -169,6 +173,43 @@ static Stmt *print_stmt(struct tokenlist *tlist)
         return NULL;
 
     return new_print_stmt(expr);
+}
+
+
+static Stmt *block_stmt(struct tokenlist *tlist)
+{
+    size_t n;
+    unsigned i;
+
+    Stmt *stmt, **stmts;
+    Token *first, *t;
+
+    n = 0;
+    first = get_token(tlist);
+    for (t = first; t != NULL && t->type != TOKEN_RIGHT_BRACE; t = get_token(tlist)) {
+        if (t->type == TOKEN_SEMICOLON)
+            n++;
+    }
+
+    if (t == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected '}' at the end of the block");
+        return NULL;
+    }
+
+    stmts = (Stmt **) calloc(n + 1, sizeof(Stmt *));
+
+    i = 0;
+    tlist->curr = first;
+    while ((t = peek_token(tlist)) != NULL && t->type != TOKEN_RIGHT_BRACE) {
+        //printf("%d\n", t->type);
+        if ((stmt = declaration(tlist)) == NULL) {
+            free(stmts); // do proper free
+            return NULL;
+        }
+        stmts[i++] = stmt;
+    }
+
+    return new_block_stmt(i, stmts);
 }
 
 
@@ -193,7 +234,7 @@ static Expr *assignment(struct tokenlist *tlist)
 {
     Token *token;
     Expr *expr, *rexpr;
-
+    
     if ((expr = equality(tlist)) == NULL)
         return NULL;
 

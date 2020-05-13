@@ -4,6 +4,18 @@
 #include "stmt.h"
 
 
+Stmt *new_block_stmt(size_t n, Stmt **stmts)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_BLOCK;
+    stmt->block.n = n;
+    stmt->block.stmts = stmts;
+
+    return stmt;
+}
+
+
 Stmt *new_expr_stmt(Expr *expr)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));

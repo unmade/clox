@@ -11,6 +11,7 @@
 #include "stmt.h"
 
 static int exec(Stmt *stmt);
+static int exec_block_stmt(Stmt *stmt);
 static int exec_print_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
 static int exec_var_stmt(Stmt *stmt);
@@ -46,6 +47,8 @@ int interpret(Stmt **stmts)
 static int exec(Stmt *stmt)
 {
     switch (stmt->type) {
+        case STMT_BLOCK:
+            return exec_block_stmt(stmt);
         case STMT_PRINT:
             return exec_print_stmt(stmt);
         case STMT_EXPR:
@@ -55,6 +58,22 @@ static int exec(Stmt *stmt)
         default:
             return 1;
     };
+}
+
+
+static int exec_block_stmt(Stmt *stmt)
+{
+    unsigned i;
+
+    ENV = add_env(ENV);
+
+    for (i = 0; i < stmt->block.n; i++)
+        if (exec(stmt->block.stmts[i]) != 0)
+            return 1;
+
+    ENV = remove_env(ENV);
+
+    return 0;
 }
 
 

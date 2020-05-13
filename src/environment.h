@@ -4,9 +4,15 @@
 #include "dict.h"
 #include "loxobj.h"
 
-typedef Dict LoxEnv;
+typedef struct loxenv {
+    struct loxenv *next;
+    Dict *storage;
+} LoxEnv;
 
 LoxEnv *new_env();
+
+LoxEnv *add_env(LoxEnv *env);
+LoxEnv *remove_env(LoxEnv *env);
 
 int env_assign(LoxEnv *env, char *name, LoxObj *obj);
 void env_def(LoxEnv *env, char *name, LoxObj *obj);
