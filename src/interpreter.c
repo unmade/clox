@@ -15,12 +15,15 @@ static int exec_print_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
 static int exec_var_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
-static LoxObj *eval_unary(const Expr *expr);
-static LoxObj *eval_literal(const Expr *expr);
+static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
+static LoxObj *eval_literal(const Expr *expr);
+static LoxObj *eval_unary(const Expr *expr);
+static LoxObj *eval_var(const Expr *expr);
 static char *joinstr(const char *s1, const char *s2);
 
 static LoxEnv *ENV = NULL;
+
 
 int interpret(Stmt **stmts)
 {
@@ -29,11 +32,12 @@ int interpret(Stmt **stmts)
     if (ENV == NULL)
         ENV = new_env();
 
-    for (i = 0; stmts[i] != NULL; i++) 
+    for (i = 0; stmts[i] != NULL; i++)  {
         if ((code = exec(stmts[i])) != 0) {
             log_error(LOX_RUNTIME_ERR, "invalid statement");
             return code;
         }
+    }
 
     return 0;
 }
@@ -69,7 +73,7 @@ static int exec_print_stmt(Stmt *stmt)
 
 static int exec_expr_stmt(Stmt *stmt)
 {
-    return (eval(stmt->expr) != NULL);
+    return (eval(stmt->expr) == NULL);
 }
 
 
@@ -93,17 +97,34 @@ static int exec_var_stmt(Stmt *stmt)
 static LoxObj *eval(const Expr *expr)
 {
     switch (expr->type) {
-        case EXPR_GROUPING:
-            return eval(expr->grouping);
-        case EXPR_UNARY:
-            return eval_unary(expr);
-        case EXPR_LITERAL:
-            return eval_literal(expr);
+        case EXPR_ASSIGN:
+            return eval_assignment(expr);
         case EXPR_BINARY:
             return eval_binary(expr);
+        case EXPR_GROUPING:
+            return eval(expr->grouping);
+        case EXPR_LITERAL:
+            return eval_literal(expr);
+        case EXPR_UNARY:
+            return eval_unary(expr);
+        case EXPR_VAR:
+            return eval_var(expr);
         default:
             return NULL;
     }
+}
+
+
+static LoxObj *eval_assignment(const Expr *expr)
+{
+    LoxObj *value;
+
+    if ((value = eval(expr->assign.value)) != NULL) {
+        env_assign(ENV, expr->varname->lexeme, value);
+        return value;
+    }
+
+    return NULL;
 }
 
 
@@ -182,8 +203,6 @@ static LoxObj *eval_binary(const Expr *expr)
 
 static LoxObj *eval_literal(const Expr *expr)
 {
-    LoxObj *obj; 
-
     switch (expr->literal->type) {
         case TOKEN_NUMBER:
             return new_num_obj(atof(expr->literal->lexeme));
@@ -195,13 +214,20 @@ static LoxObj *eval_literal(const Expr *expr)
             return new_bool_obj(true);
         case TOKEN_NIL:
             return new_nil_obj();
-        case TOKEN_IDENTIFIER:
-            if ((obj = env_get(ENV, expr->literal->lexeme)) == NULL)
-                log_error(LOX_RUNTIME_ERR, "undefined variable '%s'", expr->literal->lexeme);
-            return obj;
         default:
             return NULL;
     }
+}
+
+
+static LoxObj *eval_var(const Expr *expr)
+{
+    LoxObj *obj;
+
+    if ((obj = env_get(ENV, expr->varname->lexeme)) == NULL)
+        log_error(LOX_RUNTIME_ERR, "undefined variable '%s'", expr->varname->lexeme);
+
+    return obj;
 }
 
 

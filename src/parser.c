@@ -16,6 +16,7 @@ static Stmt *statement(struct tokenlist *tlist);
 static Stmt *print_stmt(struct tokenlist *tlist);
 static Stmt *expr_stmt(struct tokenlist *tlist);
 static Expr *expression(struct tokenlist *tlist);
+static Expr *assignment(struct tokenlist *tlist);
 static Expr *equality(struct tokenlist *tlist);
 static Expr *comparison(struct tokenlist *tlist);
 static Expr *addition(struct tokenlist *tlist);
@@ -184,7 +185,36 @@ static Stmt *expr_stmt(struct tokenlist *tlist)
 
 static Expr *expression(struct tokenlist *tlist)
 {
-    return equality(tlist);
+    return assignment(tlist);
+}
+
+
+static Expr *assignment(struct tokenlist *tlist)
+{
+    Token *token;
+    Expr *expr, *rexpr;
+
+    if ((expr = equality(tlist)) == NULL)
+        return NULL;
+
+    if ((token = peek_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type == TOKEN_EQUAL) {
+        get_token(tlist);
+        
+        if ((rexpr = assignment(tlist)) == NULL)
+            return NULL;
+
+        if (expr->type != EXPR_VAR) {
+            log_error(LOX_SYNTAX_ERR, "invalid assignment target");
+            return NULL;
+        }
+
+        return new_assign_expr(expr->varname, rexpr);
+    }
+
+    return expr;
 }
 
 
@@ -331,8 +361,11 @@ static Expr *primary(struct tokenlist *tlist)
 
     if (token->type == TOKEN_FALSE || token->type == TOKEN_NIL \
         || token->type == TOKEN_NUMBER || token->type == TOKEN_STRING \
-        || token->type == TOKEN_TRUE || token->type == TOKEN_IDENTIFIER)
+        || token->type == TOKEN_TRUE)
         return new_literal_expr(token);
+
+    if (token->type == TOKEN_IDENTIFIER)
+        return new_var_expr(token);
 
     log_error(LOX_SYNTAX_ERR, "invalid syntax");
     return NULL;

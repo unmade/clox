@@ -17,6 +17,18 @@ static int join_expr(
 );
 
 
+Expr *new_assign_expr(Token *name, Expr *value)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_ASSIGN;
+    expr->assign.name = name;
+    expr->assign.value = value;
+
+    return expr;
+}
+
+
 Expr *new_binary_expr(Expr *left, Token *op, Expr *right)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
@@ -64,6 +76,17 @@ Expr *new_unary_expr(Token *op, Expr *right)
 }
 
 
+Expr *new_var_expr(Token *name)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_VAR;
+    expr->varname = name;
+
+    return expr;
+}
+
+
 void print_expr(const Expr *expr)
 {
     char *s;
@@ -90,6 +113,9 @@ char *str_expr(const Expr *expr)
 static int _str_expr(char *s, unsigned len, size_t *maxlen, const Expr *expr)
 {
     switch(expr->type) {
+        case EXPR_ASSIGN:
+            return join_expr(s, len, maxlen, expr->assign.name->lexeme,
+                             1, expr->assign.value);
         case EXPR_BINARY:
             return join_expr(s, len, maxlen, expr->binary.op->lexeme,
                             2, expr->binary.left, expr->binary.right);
@@ -101,6 +127,8 @@ static int _str_expr(char *s, unsigned len, size_t *maxlen, const Expr *expr)
         case EXPR_UNARY:
             return join_expr(s, len, maxlen, expr->unary.op->lexeme,
                             1, expr->unary.right);
+        case EXPR_VAR:
+            return join_expr(s, len, maxlen, expr->varname->lexeme, 0);
         default:
             return len;
     }

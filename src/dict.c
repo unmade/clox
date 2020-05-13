@@ -28,7 +28,6 @@ LoxObj *dict_get(Dict *dict, char *key)
 {
     unsigned idx, hashval;
     Entry *entry;
-    LoxObj *obj;
 
     hashval = hash_str(key);
     idx = hashval % dict->capacity;
