@@ -30,6 +30,8 @@ Keyword KEYWORDS[] = {
 };
 
 static Token *new_token(int type, char *lexeme);
+static void free_token(Token *token);
+
 static Token *get_token(int c, FILE *s);
 static Token *new_str_token(FILE *ifp);
 static Token *new_num_token(FILE *ifp);
@@ -41,10 +43,16 @@ static Keyword *binsearch(char *kwrd, Keyword *tab, int n);
 Token *scan(FILE *input)
 {
     char c, next_c;
+    bool is_stdin;
     Token *token, *first;
 
+    is_stdin = (input == stdin);
+
     first = token = NULL;
-    while ((c = getc(input)) != EOF && c != '\n') {
+    while ((c = getc(input)) != EOF) {
+        if (is_stdin && c == '\n')
+            break;
+
         if (isspace(c))
             continue;
 
@@ -62,16 +70,28 @@ Token *scan(FILE *input)
             first = token = get_token(c, input);
         } else {
             token->next = get_token(c, input);
-            token->next->prev = token;
             token = token->next;
         }
     }
 
     for (token = first; token != NULL; token = token->next)
-        if (token->type == TOKEN_ERROR)
+        if (token->type == TOKEN_ERROR) {
+            free_tokens(first);
             return NULL;
+        }
 
     return first;
+}
+
+
+void free_tokens(Token *tokens)
+{
+    Token *token, *next;
+
+    for (token = tokens; token != NULL; token = next) {
+        next = token->next;
+        free_token(token);
+    }
 }
 
 
@@ -151,13 +171,32 @@ static Token *new_token(int type, char *lexeme)
     Token *token = (Token *) malloc(sizeof(Token));
     
     token->next = NULL;
-    token->prev = NULL;
 
     token->type = type;
     token->lexeme = lexeme;
     token->lineno = 1;
 
     return token;
+}
+
+
+static void free_token(Token *token)
+{
+    switch (token->type) {
+        case TOKEN_NUMBER:
+        case TOKEN_STRING:
+        case TOKEN_IDENTIFIER:
+        case TOKEN_ERROR:
+            if (token->lexeme != NULL)
+                free(token->lexeme);
+            break;
+        default:
+            if ((binsearch(token->lexeme, KEYWORDS, NKEYS)) != NULL) 
+                free(token->lexeme);
+            break;
+    }
+ 
+    free(token);
 }
 
 

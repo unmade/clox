@@ -87,6 +87,30 @@ Expr *new_var_expr(Token *name)
 }
 
 
+void free_expr(Expr *expr)
+{
+    switch (expr->type) {
+        case EXPR_ASSIGN:
+            free_expr(expr->assign.value);
+            break;
+        case EXPR_BINARY:
+            free_expr(expr->binary.left);
+            free_expr(expr->binary.right);
+            break;
+        case EXPR_GROUPING:
+            free_expr(expr->grouping);
+            break;
+        case EXPR_UNARY:
+            free_expr(expr->unary.right);
+            break;
+        default:
+            break;
+    }
+
+    free(expr);
+}
+
+
 void print_expr(const Expr *expr)
 {
     char *s;

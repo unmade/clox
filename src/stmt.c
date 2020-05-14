@@ -52,5 +52,27 @@ Stmt *new_var_stmt(char *name, Expr *expr)
 
 void free_stmt(Stmt *stmt)
 {
+    unsigned i;
+
+    switch (stmt->type) {
+        case STMT_BLOCK:
+            for (i = 0; i < stmt->block.n; i++)
+                free_stmt(stmt->block.stmts[i]); 
+            free(stmt->block.stmts);
+            break;
+        case STMT_EXPR:
+            free_expr(stmt->expr);
+            break;
+        case STMT_PRINT:
+            free_expr(stmt->expr);
+            break;
+        case STMT_VAR:
+            free(stmt->var.name);
+            free_expr(stmt->var.expr);
+            break;
+        default:
+            break;
+    }
+
     free(stmt);
 }

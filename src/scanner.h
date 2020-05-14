@@ -54,7 +54,6 @@ typedef struct {
 
 typedef struct token {
     struct token *next;
-    struct token *prev;
     TokenType type;
     char *lexeme;
     int lineno;
@@ -62,5 +61,6 @@ typedef struct token {
 
 
 Token *scan(FILE *input);
+void free_tokens(Token *tokens);
 
 #endif

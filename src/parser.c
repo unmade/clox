@@ -1,8 +1,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "expr.h"
 #include "logger.h"
+#include "parser.h"
 #include "scanner.h"
 #include "stmt.h"
 
@@ -74,15 +76,24 @@ Stmt **parse(Token *tokens)
             stmts[i] = stmt;
 
     if (has_error) {
-        while (--i) 
-            free_stmt(stmts[i]);
-        free(stmts);
+        free_stmts(stmts);
         return NULL;
     }
 
     stmts[i++] = NULL;
 
     return stmts;
+}
+
+
+void free_stmts(Stmt **stmts)
+{
+    unsigned i;
+
+    for (i = 0; stmts[i] != NULL; i++)
+        free_stmt(stmts[i]);
+
+    free(stmts);
 }
 
 
@@ -129,7 +140,7 @@ static Stmt *var_declaration(struct tokenlist *tlist)
         return NULL;
     }
 
-    name = token->lexeme;
+    name = strdup(token->lexeme);
 
     if ((token = peek_token(tlist)) == NULL) 
         return NULL;
@@ -201,7 +212,6 @@ static Stmt *block_stmt(struct tokenlist *tlist)
     i = 0;
     tlist->curr = first;
     while ((t = peek_token(tlist)) != NULL && t->type != TOKEN_RIGHT_BRACE) {
-        //printf("%d\n", t->type);
         if ((stmt = declaration(tlist)) == NULL) {
             free(stmts); // do proper free
             return NULL;

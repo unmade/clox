@@ -5,5 +5,6 @@
 #include "stmt.h"
 
 Stmt **parse(Token *tokens);
+void free_stmts(Stmt **stmts);
 
 #endif

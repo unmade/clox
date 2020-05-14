@@ -34,10 +34,8 @@ int interpret(Stmt **stmts)
         ENV = new_env();
 
     for (i = 0; stmts[i] != NULL; i++)  {
-        if ((code = exec(stmts[i])) != 0) {
-            log_error(LOX_RUNTIME_ERR, "invalid statement");
+        if ((code = exec(stmts[i])) != 0)
             return code;
-        }
     }
 
     return 0;
@@ -149,21 +147,20 @@ static LoxObj *eval_assignment(const Expr *expr)
 
 static LoxObj *eval_unary(const Expr *expr) 
 {
-    LoxObj *right, *obj;
+    LoxObj *right;
 
     if ((right = eval(expr->unary.right)) == NULL)
         return NULL;
 
     switch (expr->unary.op->type) {
         case TOKEN_BANG:
-            obj = new_bool_obj(!is_obj_truthy(right));
-            free_obj(right);
-            return obj;
+            return new_bool_obj(!is_obj_truthy(right));
         case TOKEN_MINUS:
-            if (right->type != LOX_OBJ_NUMBER)
-                return NULL;
-            right->fval *= -1;
-            return right;
+            if (right->type != LOX_OBJ_NUMBER) {
+                log_error(LOX_RUNTIME_ERR, "operand must be a number");
+                return NULL; 
+            }
+            return new_num_obj(right->fval * -1);
         default:
             return NULL;
     }
@@ -213,8 +210,9 @@ static LoxObj *eval_binary(const Expr *expr)
             break;
     }
 
-    free_obj(left);
-    free_obj(right);
+    // I can't free objs, cause they might be referenced by others
+    //free_obj(left);
+    //free_obj(right);
 
     return obj;
 }

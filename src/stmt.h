@@ -24,6 +24,7 @@ Stmt *new_block_stmt(size_t n, Stmt **stmts);
 Stmt *new_expr_stmt(Expr *expr);
 Stmt *new_print_stmt(Expr *expr);
 Stmt *new_var_stmt(char *name, Expr *expr);
+
 void free_stmt(Stmt *stmt);
 
 #endif

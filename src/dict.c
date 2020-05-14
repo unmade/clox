@@ -4,7 +4,7 @@
 
 #include "dict.h"
 
-#define DEFAULT_SIZE 4
+#define DEFAULT_SIZE 8
 
 static Entry **new_entries(size_t n);
 static void free_entries(size_t n, Entry **entries);
@@ -60,7 +60,7 @@ static Entry *new_entry(char *key, LoxObj *value, unsigned hashval)
 
     entry = (Entry *) malloc(sizeof(Entry));
 
-    entry->key = key;
+    entry->key = strdup(key);
     entry->value = value;
     entry->hashval = hashval;
     entry->deleted = false;
@@ -86,10 +86,11 @@ LoxObj *dict_get(Dict *dict, char *key)
     hashval = hash_str(key);
     idx = hashval % dict->capacity;
 
-    while ((entry = dict->entries[idx]) != NULL)
-        if ((entry->hashval == hashval) && (strcmp(entry->key, key) == 0))
+    while ((entry = dict->entries[idx]) != NULL) {
+        if (!entry->deleted && entry->hashval == hashval && strcmp(entry->key, key) == 0)
             return entry->value;
         idx = (idx + 1) % dict->capacity;
+    }
 
     return NULL;
 }
@@ -116,20 +117,21 @@ void dict_set(Dict *dict, char *key, LoxObj *value)
         idx = (idx + 1) % dict->capacity;
     }
 
-    if (!seen)
+    if (!seen) 
         target_idx = idx;
 
     if (dict->entries[target_idx] == NULL) {
         dict->fill++;
         dict->used++;
+        dict->entries[target_idx] = new_entry(key, value, hashval);
     } else if (dict->entries[target_idx]->deleted) {
         dict->used++;
+        dict->entries[target_idx]->value = value;
+        dict->entries[target_idx]->deleted = false;
     } else {
-        free_entry(dict->entries[target_idx]);
+        dict->entries[target_idx]->value = value;
     }
-
-    dict->entries[target_idx] = new_entry(key, value, hashval);
-
+ 
     if (3 * dict->fill >= 2 * dict->capacity)
         dict_resize(dict);
 }

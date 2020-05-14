@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
         printf("lox > ");
 
-        if ((tokens = scan(source)) == NULL) 
+        if ((tokens = scan(source)) == NULL)
             continue;
 
         if ((stmts = parse(tokens)) == NULL)
@@ -39,6 +39,9 @@ int main(int argc, char *argv[])
 
         if (interpret(stmts) != 0)
             continue;
+
+        free_stmts(stmts);
+        free_tokens(tokens); 
     }
 
     fclose(source);

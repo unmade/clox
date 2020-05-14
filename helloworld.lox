@@ -1,2 +1,3 @@
-// This is a small Hello World program
-print "Hello, World!";
+var s = "hello" + "," + " " + "world!";
+
+print s;
