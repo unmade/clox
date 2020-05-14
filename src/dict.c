@@ -4,7 +4,13 @@
 
 #include "dict.h"
 
-#define DEFAULT_SIZE 8
+#define DEFAULT_SIZE 4
+
+static Entry **new_entries(size_t n);
+static void free_entries(size_t n, Entry **entries);
+
+static Entry *new_entry(char *key, LoxObj *obj, unsigned hashval);
+static void free_entry(Entry *entry);
 
 static unsigned hash_str(char *s);
 static void dict_resize(Dict *dict);
@@ -15,13 +21,61 @@ Dict *new_dict()
     Dict *dict = (Dict *) malloc(sizeof(Dict));
 
     dict->capacity = DEFAULT_SIZE;
-    dict->entries = (Entry **) calloc(dict->capacity, sizeof(Entry *));
+    dict->entries = new_entries(dict->capacity);
     dict->fill = 0;
     dict->used = 0;
 
     return dict;
 }
 
+
+void free_dict(Dict *dict)
+{
+    free_entries(dict->capacity, dict->entries);
+    free(dict);
+}
+
+static Entry **new_entries(size_t n)
+{
+    return (Entry **) calloc(n, sizeof(Entry *));
+}
+
+
+static void free_entries(size_t n, Entry **entries)
+{
+    unsigned i;
+    Entry *entry;
+
+    for (i = 0; i < n; i++) {
+        if ((entry = entries[i]) != NULL)
+            free_entry(entry);
+        entries[i] = NULL;
+    }
+}
+
+
+static Entry *new_entry(char *key, LoxObj *value, unsigned hashval)
+{ 
+    Entry *entry;
+
+    entry = (Entry *) malloc(sizeof(Entry));
+
+    entry->key = key;
+    entry->value = value;
+    entry->hashval = hashval;
+    entry->deleted = false;
+
+    return entry;
+}
+
+
+static void free_entry(Entry *entry)
+{
+    free(entry->key);
+    // I don't think dict should free its values
+    // free(entry->value);
+    free(entry);
+}
 
 
 LoxObj *dict_get(Dict *dict, char *key)
@@ -71,17 +125,10 @@ void dict_set(Dict *dict, char *key, LoxObj *value)
     } else if (dict->entries[target_idx]->deleted) {
         dict->used++;
     } else {
-        free(dict->entries[target_idx]);
+        free_entry(dict->entries[target_idx]);
     }
 
-    entry = (Entry *) malloc(sizeof(Entry));
-
-    entry->key = key;
-    entry->value = value;
-    entry->hashval = hashval;
-    entry->deleted = false;
-
-    dict->entries[target_idx] = entry;
+    dict->entries[target_idx] = new_entry(key, value, hashval);
 
     if (3 * dict->fill >= 2 * dict->capacity)
         dict_resize(dict);
@@ -102,7 +149,7 @@ static void dict_resize(Dict *dict)
         while (capacity < dict->used)
             capacity *= 2;
 
-    entries = (Entry **) calloc(capacity, sizeof(Entry));
+    entries = new_entries(capacity);
     
     for (i = 0; i < dict->capacity; i++)
         if ((entry = dict->entries[i]) != NULL) {
@@ -113,7 +160,7 @@ static void dict_resize(Dict *dict)
                 entries[idx] = entry;
             } else {
                 dict->entries[i] = NULL;
-                free(entry);
+                free_entry(entry);
             }
         }
 

@@ -17,7 +17,14 @@ LoxEnv *new_env()
 }
 
 
-LoxEnv *add_env(LoxEnv *env)
+void free_env(LoxEnv *env)
+{
+    free_dict(env->storage);
+    free(env);
+}
+
+
+LoxEnv *enclose_env(LoxEnv *env)
 {
     LoxEnv *local_env = new_env();
 
@@ -27,11 +34,12 @@ LoxEnv *add_env(LoxEnv *env)
 }
 
 
-LoxEnv *remove_env(LoxEnv *env)
+LoxEnv *disclose_env(LoxEnv *env)
 {
     LoxEnv *e = env->next;
 
-    // don't forget to free env and storage;
+    env->next = NULL;
+    free_env(env);
 
     return e;
 }

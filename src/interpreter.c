@@ -65,13 +65,13 @@ static int exec_block_stmt(Stmt *stmt)
 {
     unsigned i;
 
-    ENV = add_env(ENV);
+    ENV = enclose_env(ENV);
 
     for (i = 0; i < stmt->block.n; i++)
         if (exec(stmt->block.stmts[i]) != 0)
             return 1;
 
-    ENV = remove_env(ENV);
+    ENV = disclose_env(ENV);
 
     return 0;
 }

@@ -10,9 +10,10 @@ typedef struct loxenv {
 } LoxEnv;
 
 LoxEnv *new_env();
+void free_env(LoxEnv *env);
 
-LoxEnv *add_env(LoxEnv *env);
-LoxEnv *remove_env(LoxEnv *env);
+LoxEnv *enclose_env(LoxEnv *env);
+LoxEnv *disclose_env(LoxEnv *env);
 
 int env_assign(LoxEnv *env, char *name, LoxObj *obj);
 void env_def(LoxEnv *env, char *name, LoxObj *obj);

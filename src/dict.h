@@ -23,6 +23,8 @@ typedef struct {
 
 
 Dict *new_dict();
+void free_dict(Dict *d);
+
 LoxObj *dict_get(Dict *d, char *key);
 void dict_set(Dict *d, char *key, LoxObj *value);
 
