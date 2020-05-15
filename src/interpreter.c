@@ -248,6 +248,12 @@ static LoxObj *eval_binary(const Expr *expr)
             else
                 log_error(LOX_RUNTIME_ERR, "operands must be two numbers or two strings");
             break;
+        case TOKEN_LESS:
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_bool_obj(left->fval < right->fval); 
+            else
+                log_error(LOX_RUNTIME_ERR, "operands must be numbers");
+            break;
         default:
             log_error(LOX_RUNTIME_ERR, "unexpected binary operator");
             break;

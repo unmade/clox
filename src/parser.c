@@ -15,6 +15,7 @@ struct tokenlist {
 static Stmt *declaration(struct tokenlist *tlist);
 static Stmt *var_declaration(struct tokenlist *tlist);
 static Stmt *statement(struct tokenlist *tlist);
+static Stmt *for_stmt(struct tokenlist *tlist);
 static Stmt *print_stmt(struct tokenlist *tlist);
 static Stmt *block_stmt(struct tokenlist *tlist);
 static Stmt *if_stmt(struct tokenlist *tlist);
@@ -166,6 +167,9 @@ static Stmt *statement(struct tokenlist *tlist)
         return NULL;
 
     switch (token->type) {
+        case TOKEN_FOR:
+            get_token(tlist);
+            return for_stmt(tlist);
         case TOKEN_LEFT_BRACE:
             get_token(tlist);
             return block_stmt(tlist);
@@ -181,6 +185,100 @@ static Stmt *statement(struct tokenlist *tlist)
         default:
             return expr_stmt(tlist);
     }
+}
+
+
+static Stmt *for_stmt(struct tokenlist *tlist)
+{
+    Token *token;
+    Expr *cond, *inc;
+    Stmt *init, *body, **stmts;
+
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type != TOKEN_LEFT_PAREN) {
+        log_error(LOX_SYNTAX_ERR, "expected '(' after 'for'");
+        return NULL;
+    }
+
+    /* Loop initialization */
+
+    if ((token = peek_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type == TOKEN_SEMICOLON) {
+        get_token(tlist);
+        init = NULL;
+    } else if (token->type == TOKEN_VAR) {
+        get_token(tlist);
+        if ((init = var_declaration(tlist)) == NULL)
+            return NULL;
+    } else {
+        if ((init = expr_stmt(tlist)) == NULL)
+            return NULL;
+    }
+
+    /* Loop condition */
+
+    if ((token = peek_token(tlist)) == NULL)
+        return NULL;
+    
+    cond = NULL;
+    if (token->type != TOKEN_SEMICOLON)
+        if ((cond = expression(tlist)) == NULL)
+            return NULL;
+    
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type != TOKEN_SEMICOLON) {
+        log_error(LOX_SYNTAX_ERR, "expected ';' after loop condition");
+        return NULL;
+    }
+
+    /* Loop increment */
+
+    if ((token = peek_token(tlist)) == NULL)
+        return NULL;
+
+    inc = NULL;
+    if (token->type != TOKEN_RIGHT_PAREN)
+        if ((inc = expression(tlist)) == NULL)
+            return NULL;
+
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type != TOKEN_RIGHT_PAREN) {
+        log_error(LOX_SYNTAX_ERR, "expected ')' after for clauses");
+        return NULL;
+    }
+
+    /* Loop body */
+
+    if ((body = statement(tlist)) == NULL)
+        return NULL;
+
+    /* Transform 'for' loop to 'while' */
+
+    if (inc != NULL) {
+        stmts = (Stmt **) calloc(2, sizeof(Stmt *));
+        stmts[0] = body;
+        stmts[1] = new_expr_stmt(inc);
+        body = new_block_stmt(2, stmts);
+    }
+
+    body = new_while_stmt(cond, body);
+
+    if (init != NULL) {
+        stmts = (Stmt **) calloc(2, sizeof(Stmt *));
+        stmts[0] = init;
+        stmts[1] = body;
+        body = new_block_stmt(2, stmts);
+    }
+
+    return body;
 }
 
 
@@ -524,7 +622,6 @@ static Expr *primary(struct tokenlist *tlist)
     if (token->type == TOKEN_IDENTIFIER)
         return new_var_expr(token);
 
-    printf("token type = %d\n", token->type);
     log_error(LOX_SYNTAX_ERR, "invalid syntax");
     return NULL;
 }
