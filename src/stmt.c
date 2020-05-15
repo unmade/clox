@@ -27,6 +27,19 @@ Stmt *new_expr_stmt(Expr *expr)
 }
 
 
+Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_IF;
+    stmt->ifelse.cond = cond;
+    stmt->ifelse.conseq = conseq;
+    stmt->ifelse.alt = alt;
+
+    return stmt;
+}
+
+
 Stmt *new_print_stmt(Expr *expr)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
@@ -62,6 +75,12 @@ void free_stmt(Stmt *stmt)
             break;
         case STMT_EXPR:
             free_expr(stmt->expr);
+            break;
+        case STMT_IF:
+            free_expr(stmt->ifelse.cond);
+            free_stmt(stmt->ifelse.conseq);
+            if (stmt->ifelse.alt != NULL)
+                free_stmt(stmt->ifelse.alt);
             break;
         case STMT_PRINT:
             free_expr(stmt->expr);

@@ -12,8 +12,9 @@
 
 static int exec(Stmt *stmt);
 static int exec_block_stmt(Stmt *stmt);
-static int exec_print_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
+static int exec_if_stmt(Stmt *stmt);
+static int exec_print_stmt(Stmt *stmt);
 static int exec_var_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
@@ -47,10 +48,12 @@ static int exec(Stmt *stmt)
     switch (stmt->type) {
         case STMT_BLOCK:
             return exec_block_stmt(stmt);
-        case STMT_PRINT:
-            return exec_print_stmt(stmt);
         case STMT_EXPR:
             return exec_expr_stmt(stmt);
+        case STMT_IF:
+            return exec_if_stmt(stmt);
+        case STMT_PRINT:
+            return exec_print_stmt(stmt);
         case STMT_VAR:
             return exec_var_stmt(stmt);
         default:
@@ -72,6 +75,23 @@ static int exec_block_stmt(Stmt *stmt)
     ENV = disclose_env(ENV);
 
     return 0;
+}
+
+
+
+static int exec_if_stmt(Stmt *stmt)
+{
+    LoxObj *cond;
+
+    if ((cond = eval(stmt->ifelse.cond)) == NULL)
+        return 1;
+
+    if (is_obj_truthy(cond))
+        return exec(stmt->ifelse.conseq);
+    else if (stmt->ifelse.alt != NULL)
+        return exec(stmt->ifelse.alt);
+    else
+        return 0;
 }
 
 
