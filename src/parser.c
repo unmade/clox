@@ -191,6 +191,7 @@ static Stmt *block_stmt(struct tokenlist *tlist)
 {
     size_t n;
     unsigned i;
+    bool has_error;
 
     Stmt *stmt, **stmts;
     Token *first, *t;
@@ -210,13 +211,21 @@ static Stmt *block_stmt(struct tokenlist *tlist)
     stmts = (Stmt **) calloc(n + 1, sizeof(Stmt *));
 
     i = 0;
+    has_error = false;
     tlist->curr = first;
     while ((t = peek_token(tlist)) != NULL && t->type != TOKEN_RIGHT_BRACE) {
-        if ((stmt = declaration(tlist)) == NULL) {
-            free(stmts); // do proper free
-            return NULL;
-        }
-        stmts[i++] = stmt;
+        if ((stmt = declaration(tlist)) == NULL)
+            has_error = true;
+        else
+            stmts[i++] = stmt;
+    }
+
+    if (has_error) {
+        n = i;
+        for (i = 0; i < n; i++)
+            free_stmt(stmts[i]);
+        free(stmts);
+        return NULL;
     }
 
     return new_block_stmt(i, stmts);
