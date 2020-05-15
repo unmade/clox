@@ -18,6 +18,7 @@ static Stmt *statement(struct tokenlist *tlist);
 static Stmt *print_stmt(struct tokenlist *tlist);
 static Stmt *block_stmt(struct tokenlist *tlist);
 static Stmt *if_stmt(struct tokenlist *tlist);
+static Stmt *while_stmt(struct tokenlist *tlist);
 static Stmt *expr_stmt(struct tokenlist *tlist);
 static Expr *expression(struct tokenlist *tlist);
 static Expr *assignment(struct tokenlist *tlist);
@@ -174,6 +175,9 @@ static Stmt *statement(struct tokenlist *tlist)
         case TOKEN_PRINT:
             get_token(tlist);
             return print_stmt(tlist);
+        case TOKEN_WHILE:
+            get_token(tlist);
+            return while_stmt(tlist);
         default:
             return expr_stmt(tlist);
     }
@@ -243,6 +247,8 @@ static Stmt *block_stmt(struct tokenlist *tlist)
         return NULL;
     }
 
+    get_token(tlist);
+
     return new_block_stmt(i, stmts);
 }
 
@@ -255,7 +261,7 @@ static Stmt *if_stmt(struct tokenlist *tlist)
     if ((token = get_token(tlist)) == NULL)
         return NULL;
 
-    if ((token->type != TOKEN_LEFT_PAREN)) {
+    if (token->type != TOKEN_LEFT_PAREN) {
         log_error(LOX_SYNTAX_ERR, "expected '(' after 'if'");
         return NULL;
     }
@@ -279,6 +285,36 @@ static Stmt *if_stmt(struct tokenlist *tlist)
     }
 
     return new_if_stmt(cond, conseq, alt); 
+}
+
+
+static Stmt *while_stmt(struct tokenlist *tlist)
+{
+    Token *token;
+    Expr *cond;
+    Stmt *body;
+
+    if ((token = get_token(tlist)) == NULL)
+        return NULL;
+
+    if (token->type != TOKEN_LEFT_PAREN) { 
+        log_error(LOX_SYNTAX_ERR, "expected '(' after 'while'");
+        return NULL;
+    }
+
+    if ((cond = expression(tlist)) == NULL)
+        return NULL;
+
+    token = get_token(tlist);
+    if ((token == NULL || (token != NULL && token->type != TOKEN_RIGHT_PAREN))) {
+        log_error(LOX_SYNTAX_ERR, "expected ')' after while condition");
+        return NULL;
+    }
+
+    if ((body = statement(tlist)) == NULL)
+        return NULL;
+
+    return new_while_stmt(cond, body);
 }
 
 
@@ -488,6 +524,7 @@ static Expr *primary(struct tokenlist *tlist)
     if (token->type == TOKEN_IDENTIFIER)
         return new_var_expr(token);
 
+    printf("token type = %d\n", token->type);
     log_error(LOX_SYNTAX_ERR, "invalid syntax");
     return NULL;
 }

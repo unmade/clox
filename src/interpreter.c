@@ -16,6 +16,7 @@ static int exec_expr_stmt(Stmt *stmt);
 static int exec_if_stmt(Stmt *stmt);
 static int exec_print_stmt(Stmt *stmt);
 static int exec_var_stmt(Stmt *stmt);
+static int exec_while_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
@@ -56,6 +57,8 @@ static int exec(Stmt *stmt)
             return exec_print_stmt(stmt);
         case STMT_VAR:
             return exec_var_stmt(stmt);
+        case STMT_WHILE:
+            return exec_while_stmt(stmt);
         default:
             return 1;
     };
@@ -126,6 +129,26 @@ static int exec_var_stmt(Stmt *stmt)
     }
 
     env_def(ENV, stmt->var.name, obj);
+
+    return 0;
+}
+
+
+static int exec_while_stmt(Stmt *stmt)
+{
+    int res;
+    LoxObj *obj;
+
+    while (true) {
+        if ((obj = eval(stmt->whileloop.cond)) == NULL)
+            return 1;
+
+        if (!is_obj_truthy(obj))
+            return 0;
+
+        if ((res = exec(stmt->whileloop.body)) != 0)
+            return res;
+    }
 
     return 0;
 }

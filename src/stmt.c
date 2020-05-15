@@ -63,6 +63,18 @@ Stmt *new_var_stmt(char *name, Expr *expr)
 }
 
 
+Stmt *new_while_stmt(Expr *cond, Stmt *body)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_WHILE;
+    stmt->whileloop.cond = cond;
+    stmt->whileloop.body = body;
+
+    return stmt;
+}
+
+
 void free_stmt(Stmt *stmt)
 {
     unsigned i;
@@ -88,6 +100,10 @@ void free_stmt(Stmt *stmt)
         case STMT_VAR:
             free(stmt->var.name);
             free_expr(stmt->var.expr);
+            break;
+        case STMT_WHILE:
+            free_expr(stmt->whileloop.cond);
+            free_stmt(stmt->whileloop.body);
             break;
         default:
             break;

@@ -9,6 +9,7 @@ enum StmtType {
     STMT_IF,
     STMT_PRINT,
     STMT_VAR,
+    STMT_WHILE,
 };
 
 
@@ -19,6 +20,7 @@ typedef struct stmt {
         struct { size_t n; struct stmt **stmts; } block;
         struct { Expr *cond; struct stmt *conseq; struct stmt *alt; } ifelse;
         struct { char *name; Expr *expr; } var;
+        struct { Expr *cond; struct stmt *body; } whileloop;
     };
 } Stmt;
 
@@ -27,6 +29,7 @@ Stmt *new_expr_stmt(Expr *expr);
 Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt);
 Stmt *new_print_stmt(Expr *expr);
 Stmt *new_var_stmt(char *name, Expr *expr);
+Stmt *new_while_stmt(Expr *cond, Stmt *body);
 
 void free_stmt(Stmt *stmt);
 
