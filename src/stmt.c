@@ -99,7 +99,8 @@ void free_stmt(Stmt *stmt)
             break;
         case STMT_VAR:
             free(stmt->var.name);
-            free_expr(stmt->var.expr);
+            if (stmt->var.expr != NULL)
+                free_expr(stmt->var.expr);
             break;
         case STMT_WHILE:
             free_expr(stmt->whileloop.cond);

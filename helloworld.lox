@@ -1,3 +1,21 @@
+var N = 1;
 var s = "hello" + "," + " " + "world!";
 
-print s;
+
+for (var i = 0; i < N; i = i + 1) {
+    print s;
+}
+
+var a = 0;
+var b = 1;
+var cond = true;
+
+while (cond) {
+    if (a < 9) {
+        print a;
+        var temp = a;
+        a = b;
+        b = temp + b;
+    } else
+        cond = false;
+}
