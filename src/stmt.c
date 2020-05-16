@@ -27,6 +27,19 @@ Stmt *new_expr_stmt(Expr *expr)
 }
 
 
+Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_IF;
+    stmt->ifelse.cond = cond;
+    stmt->ifelse.conseq = conseq;
+    stmt->ifelse.alt = alt;
+
+    return stmt;
+}
+
+
 Stmt *new_print_stmt(Expr *expr)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
@@ -50,6 +63,18 @@ Stmt *new_var_stmt(char *name, Expr *expr)
 }
 
 
+Stmt *new_while_stmt(Expr *cond, Stmt *body)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_WHILE;
+    stmt->whileloop.cond = cond;
+    stmt->whileloop.body = body;
+
+    return stmt;
+}
+
+
 void free_stmt(Stmt *stmt)
 {
     unsigned i;
@@ -63,12 +88,22 @@ void free_stmt(Stmt *stmt)
         case STMT_EXPR:
             free_expr(stmt->expr);
             break;
+        case STMT_IF:
+            free_expr(stmt->ifelse.cond);
+            free_stmt(stmt->ifelse.conseq);
+            if (stmt->ifelse.alt != NULL)
+                free_stmt(stmt->ifelse.alt);
+            break;
         case STMT_PRINT:
             free_expr(stmt->expr);
             break;
         case STMT_VAR:
             free(stmt->var.name);
             free_expr(stmt->var.expr);
+            break;
+        case STMT_WHILE:
+            free_expr(stmt->whileloop.cond);
+            free_stmt(stmt->whileloop.body);
             break;
         default:
             break;

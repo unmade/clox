@@ -12,9 +12,11 @@
 
 static int exec(Stmt *stmt);
 static int exec_block_stmt(Stmt *stmt);
-static int exec_print_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
+static int exec_if_stmt(Stmt *stmt);
+static int exec_print_stmt(Stmt *stmt);
 static int exec_var_stmt(Stmt *stmt);
+static int exec_while_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
@@ -47,12 +49,16 @@ static int exec(Stmt *stmt)
     switch (stmt->type) {
         case STMT_BLOCK:
             return exec_block_stmt(stmt);
-        case STMT_PRINT:
-            return exec_print_stmt(stmt);
         case STMT_EXPR:
             return exec_expr_stmt(stmt);
+        case STMT_IF:
+            return exec_if_stmt(stmt);
+        case STMT_PRINT:
+            return exec_print_stmt(stmt);
         case STMT_VAR:
             return exec_var_stmt(stmt);
+        case STMT_WHILE:
+            return exec_while_stmt(stmt);
         default:
             return 1;
     };
@@ -72,6 +78,23 @@ static int exec_block_stmt(Stmt *stmt)
     ENV = disclose_env(ENV);
 
     return 0;
+}
+
+
+
+static int exec_if_stmt(Stmt *stmt)
+{
+    LoxObj *cond;
+
+    if ((cond = eval(stmt->ifelse.cond)) == NULL)
+        return 1;
+
+    if (is_obj_truthy(cond))
+        return exec(stmt->ifelse.conseq);
+    else if (stmt->ifelse.alt != NULL)
+        return exec(stmt->ifelse.alt);
+    else
+        return 0;
 }
 
 
@@ -106,6 +129,28 @@ static int exec_var_stmt(Stmt *stmt)
     }
 
     env_def(ENV, stmt->var.name, obj);
+
+    return 0;
+}
+
+
+static int exec_while_stmt(Stmt *stmt)
+{
+    int res;
+    LoxObj *obj;
+
+    while (true) {
+        if (stmt->whileloop.cond != NULL) {
+            if ((obj = eval(stmt->whileloop.cond)) == NULL)
+                return 1;
+
+            if (!is_obj_truthy(obj))
+                return 0;
+        }
+
+        if ((res = exec(stmt->whileloop.body)) != 0)
+            return res;
+    }
 
     return 0;
 }
@@ -204,6 +249,12 @@ static LoxObj *eval_binary(const Expr *expr)
                 obj = new_str_obj(joinstr(left->sval, right->sval));
             else
                 log_error(LOX_RUNTIME_ERR, "operands must be two numbers or two strings");
+            break;
+        case TOKEN_LESS:
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_bool_obj(left->fval < right->fval); 
+            else
+                log_error(LOX_RUNTIME_ERR, "operands must be numbers");
             break;
         default:
             log_error(LOX_RUNTIME_ERR, "unexpected binary operator");
