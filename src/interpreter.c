@@ -140,11 +140,13 @@ static int exec_while_stmt(Stmt *stmt)
     LoxObj *obj;
 
     while (true) {
-        if ((obj = eval(stmt->whileloop.cond)) == NULL)
-            return 1;
+        if (stmt->whileloop.cond != NULL) {
+            if ((obj = eval(stmt->whileloop.cond)) == NULL)
+                return 1;
 
-        if (!is_obj_truthy(obj))
-            return 0;
+            if (!is_obj_truthy(obj))
+                return 0;
+        }
 
         if ((res = exec(stmt->whileloop.body)) != 0)
             return res;
