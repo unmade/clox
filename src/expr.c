@@ -42,6 +42,20 @@ Expr *new_binary_expr(Expr *left, Token *op, Expr *right)
 }
 
 
+Expr *new_call_expr(Expr *callee, Token *paren, size_t argc, Expr **args)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_CALL;
+    expr->call.callee = callee;
+    expr->call.paren = paren;
+    expr->call.argc = argc;
+    expr->call.args = args;
+
+    return expr;
+}
+
+
 Expr *new_grouping_expr(Expr *group)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
@@ -89,6 +103,8 @@ Expr *new_var_expr(Token *name)
 
 void free_expr(Expr *expr)
 {
+    unsigned i;
+
     switch (expr->type) {
         case EXPR_ASSIGN:
             free_expr(expr->assign.value);
@@ -96,6 +112,14 @@ void free_expr(Expr *expr)
         case EXPR_BINARY:
             free_expr(expr->binary.left);
             free_expr(expr->binary.right);
+            break;
+        case EXPR_CALL:
+            free_expr(expr->call.callee);
+            if (expr->call.args != NULL) {
+                for (i = 0; expr->call.args[i] != NULL; i++)
+                    free_expr(expr->call.args[i]);
+                free(expr->call.args);
+            }
             break;
         case EXPR_GROUPING:
             free_expr(expr->grouping);

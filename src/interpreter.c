@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "globals.h"
 #include "environment.h"
 #include "expr.h"
 #include "interpreter.h"
@@ -10,6 +11,7 @@
 #include "scanner.h"
 #include "stmt.h"
 
+static LoxEnv *init_env();
 static int exec(Stmt *stmt);
 static int exec_block_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
@@ -20,6 +22,7 @@ static int exec_while_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
+static LoxObj *eval_call(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_var(const Expr *expr);
@@ -28,12 +31,15 @@ static char *joinstr(const char *s1, const char *s2);
 static LoxEnv *ENV = NULL;
 
 
+
 int interpret(Stmt **stmts)
 {
     int i, code;
+    char *s;
 
+    LoxObj *obj;
     if (ENV == NULL)
-        ENV = new_env();
+        ENV = init_env();
 
     for (i = 0; stmts[i] != NULL; i++)  {
         if ((code = exec(stmts[i])) != 0)
@@ -41,6 +47,20 @@ int interpret(Stmt **stmts)
     }
 
     return 0;
+}
+
+
+static LoxEnv *init_env()
+{
+    LoxEnv *env;
+    char *s;
+
+    env = new_env();
+    
+    s = strdup("clock");
+    env_def(env, s, new_callable_obj(0, loxclock));
+
+    return env;
 }
 
 
@@ -163,6 +183,8 @@ static LoxObj *eval(const Expr *expr)
             return eval_assignment(expr);
         case EXPR_BINARY:
             return eval_binary(expr);
+        case EXPR_CALL:
+            return eval_call(expr);
         case EXPR_GROUPING:
             return eval(expr->grouping);
         case EXPR_LITERAL:
@@ -266,6 +288,46 @@ static LoxObj *eval_binary(const Expr *expr)
     //free_obj(right);
 
     return obj;
+}
+
+
+static LoxObj *eval_call(const Expr *expr)
+{
+    unsigned i;
+    LoxObj *callee, *arg, **args, *obj;
+
+    args = NULL;
+
+    if ((callee = eval(expr->call.callee)) == NULL)
+        return NULL;
+
+    if (callee->type != LOX_OBJ_CALLABLE) {
+        log_error(LOX_RUNTIME_ERR, "can only call functions or classes");
+        goto cleanup;
+    }
+
+    if (expr->call.args != NULL ) {
+        args = (LoxObj **) malloc(sizeof(LoxObj *));
+        for (i = 0; i < expr->call.argc; i++) {
+            if ((arg = eval(expr->call.args[i])) == NULL)
+                goto cleanup;
+            args[i] = arg;
+        }
+    }
+
+    if (expr->call.argc != callee->callable.arity) {
+        log_error(LOX_RUNTIME_ERR, "too few or too many arguments");
+        goto cleanup;
+    }
+
+    if ((obj = callee->callable.func(expr->call.argc, args)) == NULL)
+        goto cleanup;
+
+    return obj;
+cleanup:
+    if (args != NULL) free(args);
+    // maybe free obj later?
+    return NULL;
 }
 
 

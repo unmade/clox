@@ -5,23 +5,32 @@
 
 enum LoxObjType {
     LOX_OBJ_BOOL = 0,
+    LOX_OBJ_CALLABLE,
     LOX_OBJ_NIL,
     LOX_OBJ_NUMBER,
     LOX_OBJ_STRING,
 };
 
+struct loxobj;
 
-typedef struct {
+typedef struct loxobj *(*func_t)(unsigned argc, struct loxobj **args);
+
+typedef struct loxobj {
     enum LoxObjType type;
     union {
         bool bval;
         float fval;
         char *sval;
+        struct {
+            unsigned arity;
+            func_t func;
+        } callable;
     };
 } LoxObj;
 
 
 LoxObj *new_bool_obj(bool val);
+LoxObj *new_callable_obj(unsigned argc, func_t func);
 LoxObj *new_nil_obj();
 LoxObj *new_num_obj(float val);
 LoxObj *new_str_obj(char *s);

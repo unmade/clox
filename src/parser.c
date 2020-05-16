@@ -8,6 +8,8 @@
 #include "scanner.h"
 #include "stmt.h"
 
+#define MAX_CALL_ARGS 254
+
 struct tokenlist {
     Token *curr;
 };
@@ -28,6 +30,8 @@ static Expr *comparison(struct tokenlist *tlist);
 static Expr *addition(struct tokenlist *tlist);
 static Expr *multiplication(struct tokenlist *tlist);
 static Expr *unary(struct tokenlist *tlist);
+static Expr *call(struct tokenlist *tlist);
+static Expr *finish_call(struct tokenlist *tlist, Expr *expr);
 static Expr *primary(struct tokenlist *tlist);
 
 
@@ -571,7 +575,77 @@ static Expr *unary(struct tokenlist *tlist)
         }
     } 
 
-    return primary(tlist);
+    return call(tlist);
+}
+
+
+static Expr *call(struct tokenlist *tlist)
+{
+    Expr *expr, *temp;
+
+    if ((expr = primary(tlist)) == NULL)
+        return NULL;
+    
+    for (;;) {
+        if (take_token(tlist, TOKEN_LEFT_PAREN)) {
+            if ((temp = finish_call(tlist, expr)) == NULL) {
+                free_expr(expr);
+                return NULL;
+            }
+            expr = temp;
+        } else {
+            break;
+        }
+    }
+
+    return expr;
+}
+
+
+static Expr *finish_call(struct tokenlist *tlist, Expr *expr)
+{
+    size_t n;
+    unsigned i;
+    Token *token, *first;
+    Expr *arg, **args;
+
+    args = NULL;
+
+    n = 0;
+    first = peek_token(tlist);
+    while ((token = get_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN)
+        n++;
+
+    if (n > 0) {
+        args = (Expr **) calloc(n + 1, sizeof(Expr *));
+
+        tlist->curr = first;
+        i = 0;
+        while ((token = get_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN) {
+            if ((arg = expression(tlist)) == NULL)
+                goto cleanup;
+            args[i++] = arg;
+        }
+    }
+
+    if (n > MAX_CALL_ARGS) {
+        log_error(LOX_SYNTAX_ERR, "cannot have more than 255 arguments");
+        goto cleanup;
+    }
+
+    if (token == NULL || (token != NULL && token->type != TOKEN_RIGHT_PAREN)) {
+        log_error(LOX_SYNTAX_ERR, "expected ')' after arguments");
+        goto cleanup;
+    }
+
+    return new_call_expr(expr, token, n, args);
+
+cleanup:
+    for (i = 0; i < n; i++)
+        free_expr(args[i]);
+    if (args != NULL) free(args);
+
+    return NULL;
 }
 
 
