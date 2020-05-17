@@ -14,6 +14,7 @@
 static LoxEnv *init_env();
 static int exec(Stmt *stmt);
 static int exec_block_stmt(Stmt *stmt);
+static int exec_fun_stmt(Stmt *stmt);
 static int exec_expr_stmt(Stmt *stmt);
 static int exec_if_stmt(Stmt *stmt);
 static int exec_print_stmt(Stmt *stmt);
@@ -23,6 +24,7 @@ static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
 static LoxObj *eval_call(const Expr *expr);
+static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *eval_literal(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_var(const Expr *expr);
@@ -31,13 +33,10 @@ static char *joinstr(const char *s1, const char *s2);
 static LoxEnv *ENV = NULL;
 
 
-
 int interpret(Stmt **stmts)
 {
     int i, code;
-    char *s;
 
-    LoxObj *obj;
     if (ENV == NULL)
         ENV = init_env();
 
@@ -71,6 +70,8 @@ static int exec(Stmt *stmt)
             return exec_block_stmt(stmt);
         case STMT_EXPR:
             return exec_expr_stmt(stmt);
+        case STMT_FUN:
+            return exec_fun_stmt(stmt);
         case STMT_IF:
             return exec_if_stmt(stmt);
         case STMT_PRINT:
@@ -100,6 +101,17 @@ static int exec_block_stmt(Stmt *stmt)
     return 0;
 }
 
+
+static int exec_fun_stmt(Stmt *stmt)
+{
+    LoxObj *fun;
+
+    fun = new_fun_obj(stmt, stmt->fun.n);
+
+    env_def(ENV, stmt->fun.name, fun);
+
+    return 0;
+}
 
 
 static int exec_if_stmt(Stmt *stmt)
@@ -293,21 +305,31 @@ static LoxObj *eval_binary(const Expr *expr)
 
 static LoxObj *eval_call(const Expr *expr)
 {
-    unsigned i;
+    unsigned i, arity;
     LoxObj *callee, *arg, **args, *obj;
+    func_t f;
 
     args = NULL;
 
     if ((callee = eval(expr->call.callee)) == NULL)
         return NULL;
 
-    if (callee->type != LOX_OBJ_CALLABLE) {
-        log_error(LOX_RUNTIME_ERR, "can only call functions or classes");
-        goto cleanup;
+    switch (callee->type) {
+        case LOX_OBJ_CALLABLE:
+            f = callee->callable.func;
+            arity = callee->callable.arity;
+            break;
+        case LOX_OBJ_FUN:
+            f = fun_call;
+            arity = callee->fun.arity;
+            break;
+        default:
+            log_error(LOX_RUNTIME_ERR, "can only call functions or classes");
+            goto cleanup;
     }
 
     if (expr->call.args != NULL ) {
-        args = (LoxObj **) malloc(sizeof(LoxObj *));
+        args = (LoxObj **) calloc(expr->call.argc + 1, sizeof(LoxObj *));
         for (i = 0; i < expr->call.argc; i++) {
             if ((arg = eval(expr->call.args[i])) == NULL)
                 goto cleanup;
@@ -315,19 +337,38 @@ static LoxObj *eval_call(const Expr *expr)
         }
     }
 
-    if (expr->call.argc != callee->callable.arity) {
+    if (expr->call.argc != arity) {
         log_error(LOX_RUNTIME_ERR, "too few or too many arguments");
         goto cleanup;
     }
 
-    if ((obj = callee->callable.func(expr->call.argc, args)) == NULL)
+    if ((obj = f(callee, expr->call.argc, args)) == NULL)
         goto cleanup;
 
     return obj;
+
 cleanup:
     if (args != NULL) free(args);
     // maybe free obj later?
     return NULL;
+}
+
+
+static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
+{
+    unsigned i;
+
+    ENV = enclose_env(ENV);
+
+    for (i = 0; i < argc; i++)
+        env_def(ENV, self->fun.declaration->fun.params[i]->lexeme, args[i]);
+
+    if (exec_block_stmt(self->fun.declaration->fun.body) != 0)
+        return NULL;
+
+    ENV = disclose_env(ENV);
+
+    return new_nil_obj();
 }
 
 

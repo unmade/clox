@@ -5,6 +5,7 @@
 
 enum StmtType {
     STMT_BLOCK = 0,
+    STMT_FUN,
     STMT_EXPR,
     STMT_IF,
     STMT_PRINT,
@@ -18,6 +19,7 @@ typedef struct stmt {
     union {
         Expr *expr;
         struct { size_t n; struct stmt **stmts; } block;
+        struct { char *name; size_t n; Token **params; struct stmt *body; } fun;
         struct { Expr *cond; struct stmt *conseq; struct stmt *alt; } ifelse;
         struct { char *name; Expr *expr; } var;
         struct { Expr *cond; struct stmt *body; } whileloop;
@@ -25,6 +27,7 @@ typedef struct stmt {
 } Stmt;
 
 Stmt *new_block_stmt(size_t n, Stmt **stmts);
+Stmt *new_fun_stmt(char *name, size_t n, Token **params, Stmt *body);
 Stmt *new_expr_stmt(Expr *expr);
 Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt);
 Stmt *new_print_stmt(Expr *expr);

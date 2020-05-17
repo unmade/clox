@@ -1,12 +1,14 @@
 #include <time.h>
 
+#include "environment.h"
 #include "loxobj.h"
 
 #define UNUSED(x) (void)(x)
 
 
-LoxObj *loxclock(unsigned argc, LoxObj **args)
+LoxObj *loxclock(LoxObj *self, unsigned argc, LoxObj **args)
 {
+    UNUSED(self);
     UNUSED(argc);
     UNUSED(args);
 

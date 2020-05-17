@@ -29,6 +29,18 @@ LoxObj *new_callable_obj(unsigned arity, func_t func)
 }
 
 
+LoxObj *new_fun_obj(Stmt *declaration, unsigned arity)
+{
+    LoxObj *obj = (LoxObj *) malloc(sizeof(LoxObj));
+
+    obj->type = LOX_OBJ_FUN;
+    obj->fun.declaration = declaration;
+    obj->fun.arity = arity;
+
+    return obj;
+}
+
+
 LoxObj *new_nil_obj()
 {
     LoxObj *obj = (LoxObj *) malloc(sizeof(LoxObj));

@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
         if (feof(source))
             break;
 
-        printf("lox > ");
+        if (source == stdin)
+            printf("lox > ");
 
         if ((tokens = scan(source)) == NULL)
             continue;

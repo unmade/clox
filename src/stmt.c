@@ -27,6 +27,20 @@ Stmt *new_expr_stmt(Expr *expr)
 }
 
 
+Stmt *new_fun_stmt(char *name, size_t n, Token **params, Stmt *body)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_FUN;
+    stmt->fun.name = name;
+    stmt->fun.n = n;
+    stmt->fun.params = params;
+    stmt->fun.body = body;
+
+    return stmt;
+}
+
+
 Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
@@ -87,6 +101,10 @@ void free_stmt(Stmt *stmt)
             break;
         case STMT_EXPR:
             free_expr(stmt->expr);
+            break;
+        case STMT_FUN:
+            free(stmt->fun.name);
+            free_stmt(stmt->fun.body);
             break;
         case STMT_IF:
             free_expr(stmt->ifelse.cond);

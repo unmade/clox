@@ -116,7 +116,7 @@ void free_expr(Expr *expr)
         case EXPR_CALL:
             free_expr(expr->call.callee);
             if (expr->call.args != NULL) {
-                for (i = 0; expr->call.args[i] != NULL; i++)
+                for (i = 0; i < expr->call.argc; i++)
                     free_expr(expr->call.args[i]);
                 free(expr->call.args);
             }

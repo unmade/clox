@@ -3,6 +3,6 @@
 
 #include "loxobj.h"
 
-static LoxObj *loxclock(unsigned argc, LoxObj **args);
+LoxObj *loxclock(LoxObj *self, unsigned argc, LoxObj **args);
 
 #endif

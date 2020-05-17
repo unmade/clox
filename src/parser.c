@@ -15,6 +15,7 @@ struct tokenlist {
 };
 
 static Stmt *declaration(struct tokenlist *tlist);
+static Stmt *fun_declaration(struct tokenlist *tlist);
 static Stmt *var_declaration(struct tokenlist *tlist);
 static Stmt *statement(struct tokenlist *tlist);
 static Stmt *for_stmt(struct tokenlist *tlist);
@@ -77,6 +78,7 @@ Stmt **parse(Token *tokens)
     if (tokens == NULL)
         return NULL;
 
+    /* this estimation is not accurate */
     n = 1;
     for (token = tokens; token != NULL; token = token->next)
         if (token->type == TOKEN_SEMICOLON)
@@ -86,11 +88,14 @@ Stmt **parse(Token *tokens)
     tlist.curr = tokens;
 
     has_error = false;
-    for (i = 0; peek_token(&tlist) != NULL; i++)
-        if ((stmt = declaration(&tlist)) == NULL)
+    for (i = 0; peek_token(&tlist) != NULL; i++) {
+        if ((stmt = declaration(&tlist)) == NULL) {
             has_error = true;
-        else
+            break;
+        } else {
             stmts[i] = stmt;
+        }
+    }
 
     if (has_error) {
         free_stmts(stmts);
@@ -116,11 +121,89 @@ void free_stmts(Stmt **stmts)
 
 static Stmt *declaration(struct tokenlist *tlist)
 {
+    if (take_token(tlist, TOKEN_FUN) != NULL)
+        return fun_declaration(tlist);
+
     if (take_token(tlist, TOKEN_VAR) != NULL)
         return var_declaration(tlist);
 
     return statement(tlist);
 }
+
+
+static Stmt *fun_declaration(struct tokenlist *tlist)
+{
+    char *name;
+    size_t n;
+    unsigned i;
+    Token *token, **params, *start;
+    Stmt *body;
+
+    i = n = 0;
+    params = NULL;
+
+    if ((token = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected function name after 'fun'");
+        return NULL;
+    }
+
+    name = token->lexeme;
+
+    if (take_token(tlist, TOKEN_LEFT_PAREN) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected '(' after function name");
+        return NULL;
+    }
+
+    token = peek_token(tlist);
+    if (token != NULL && token->type != TOKEN_RIGHT_PAREN) {
+
+        // estimate how much space to allocate for parameters
+        start = get_token(tlist);
+        do {
+            token = get_token(tlist);
+            if (token != NULL && token->type == TOKEN_IDENTIFIER)
+                n++;
+        } while (take_token(tlist, TOKEN_COMMA) != NULL);
+
+        // fill up parameters
+        tlist->curr = start;
+        params = (Token **) calloc(n, sizeof(Token *));
+        do {
+            token = get_token(tlist);
+            if (token != NULL && token->type != TOKEN_IDENTIFIER) {
+                log_error(LOX_SYNTAX_ERR, "expected parameter name");
+                goto cleanup;
+            }
+            params[i++] = token;
+        } while (take_token(tlist, TOKEN_COMMA) != NULL);
+    }
+
+    if (i > MAX_CALL_ARGS) {
+        log_error(LOX_SYNTAX_ERR, "cannot have more than %d parameters", MAX_CALL_ARGS);
+        goto cleanup;
+    }
+
+    if (take_token(tlist, TOKEN_RIGHT_PAREN) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected ')' after parameters");
+        goto cleanup;
+    }
+
+    if (take_token(tlist, TOKEN_LEFT_BRACE) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected '{' before function body");
+        goto cleanup;
+    }
+
+    if ((body = block_stmt(tlist)) == NULL)
+        goto cleanup;
+
+    return new_fun_stmt(strdup(name), i, params, body);
+
+cleanup:
+    if (params != NULL) free(params);
+
+    return NULL;
+}
+
 
 
 static Stmt *var_declaration(struct tokenlist *tlist)
@@ -587,7 +670,7 @@ static Expr *call(struct tokenlist *tlist)
         return NULL;
     
     for (;;) {
-        if (take_token(tlist, TOKEN_LEFT_PAREN)) {
+        if (take_token(tlist, TOKEN_LEFT_PAREN) != NULL) {
             if ((temp = finish_call(tlist, expr)) == NULL) {
                 free_expr(expr);
                 return NULL;
@@ -610,26 +693,30 @@ static Expr *finish_call(struct tokenlist *tlist, Expr *expr)
     Expr *arg, **args;
 
     args = NULL;
+    i = n = 0;
 
-    n = 0;
     first = peek_token(tlist);
-    while ((token = get_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN)
-        n++;
+    if ((token = peek_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN) {
+        n = 1;
+        while ((token = get_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN) {
+            if (token->type == TOKEN_COMMA)
+                n++;
+        }
+    }
+    tlist->curr = first;
 
     if (n > 0) {
-        args = (Expr **) calloc(n + 1, sizeof(Expr *));
+        args = (Expr **) calloc(n, sizeof(Expr *));
 
-        tlist->curr = first;
-        i = 0;
-        while ((token = get_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN) {
+        do {
             if ((arg = expression(tlist)) == NULL)
                 goto cleanup;
             args[i++] = arg;
-        }
+        } while (take_token(tlist, TOKEN_COMMA) != NULL);
     }
-
-    if (n > MAX_CALL_ARGS) {
-        log_error(LOX_SYNTAX_ERR, "cannot have more than 255 arguments");
+ 
+    if (i > MAX_CALL_ARGS) {
+        log_error(LOX_SYNTAX_ERR, "cannot have more than %d arguments", MAX_CALL_ARGS);
         goto cleanup;
     }
 
@@ -637,10 +724,13 @@ static Expr *finish_call(struct tokenlist *tlist, Expr *expr)
         log_error(LOX_SYNTAX_ERR, "expected ')' after arguments");
         goto cleanup;
     }
+ 
+    get_token(tlist);
 
-    return new_call_expr(expr, token, n, args);
+    return new_call_expr(expr, token, i, args);
 
 cleanup:
+    n = i;
     for (i = 0; i < n; i++)
         free_expr(args[i]);
     if (args != NULL) free(args);
