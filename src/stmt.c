@@ -65,6 +65,17 @@ Stmt *new_print_stmt(Expr *expr)
 }
 
 
+Stmt *new_return_stmt(Expr *expr)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_RETURN;
+    stmt->expr = expr;
+
+    return stmt; 
+}
+
+
 Stmt *new_var_stmt(char *name, Expr *expr)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
@@ -113,6 +124,9 @@ void free_stmt(Stmt *stmt)
                 free_stmt(stmt->ifelse.alt);
             break;
         case STMT_PRINT:
+            free_expr(stmt->expr);
+            break;
+        case STMT_RETURN:
             free_expr(stmt->expr);
             break;
         case STMT_VAR:

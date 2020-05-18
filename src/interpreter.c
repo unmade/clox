@@ -11,15 +11,55 @@
 #include "scanner.h"
 #include "stmt.h"
 
+typedef struct {
+    int code;
+    LoxObj *value;
+} ExecResult;
+
+
+static ExecResult ExecResult_Ok()
+{
+    ExecResult res;
+
+    res.code = 0;
+    res.value = NULL;
+
+    return res;
+}
+
+
+static ExecResult ExecResult_Return(LoxObj *obj)
+{
+    ExecResult res;
+
+    res.code = 1;
+    res.value = obj;
+
+    return res;
+}
+
+
+static ExecResult ExecResult_Err()
+{
+    ExecResult res;
+
+    res.code = -1;
+    res.value = NULL;
+
+    return res;
+}
+
+
 static LoxEnv *init_env();
-static int exec(Stmt *stmt);
-static int exec_block_stmt(Stmt *stmt);
-static int exec_fun_stmt(Stmt *stmt);
-static int exec_expr_stmt(Stmt *stmt);
-static int exec_if_stmt(Stmt *stmt);
-static int exec_print_stmt(Stmt *stmt);
-static int exec_var_stmt(Stmt *stmt);
-static int exec_while_stmt(Stmt *stmt);
+static ExecResult exec(Stmt *stmt);
+static ExecResult exec_block_stmt(Stmt *stmt);
+static ExecResult exec_fun_stmt(Stmt *stmt);
+static ExecResult exec_expr_stmt(Stmt *stmt);
+static ExecResult exec_if_stmt(Stmt *stmt);
+static ExecResult exec_print_stmt(Stmt *stmt);
+static ExecResult exec_return_stmt(Stmt *stmt);
+static ExecResult exec_var_stmt(Stmt *stmt);
+static ExecResult exec_while_stmt(Stmt *stmt);
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
@@ -41,7 +81,7 @@ int interpret(Stmt **stmts)
         ENV = init_env();
 
     for (i = 0; stmts[i] != NULL; i++)  {
-        if ((code = exec(stmts[i])) != 0)
+        if ((code = exec(stmts[i]).code) < 0)
             return code;
     }
 
@@ -63,7 +103,7 @@ static LoxEnv *init_env()
 }
 
 
-static int exec(Stmt *stmt)
+static ExecResult exec(Stmt *stmt)
 {
     switch (stmt->type) {
         case STMT_BLOCK:
@@ -76,33 +116,40 @@ static int exec(Stmt *stmt)
             return exec_if_stmt(stmt);
         case STMT_PRINT:
             return exec_print_stmt(stmt);
+        case STMT_RETURN:
+            return exec_return_stmt(stmt);
         case STMT_VAR:
             return exec_var_stmt(stmt);
         case STMT_WHILE:
             return exec_while_stmt(stmt);
         default:
-            return 1;
+            return ExecResult_Err();
     };
 }
 
 
-static int exec_block_stmt(Stmt *stmt)
+static ExecResult exec_block_stmt(Stmt *stmt)
 {
     unsigned i;
+    ExecResult res;
 
     ENV = enclose_env(ENV);
 
-    for (i = 0; i < stmt->block.n; i++)
-        if (exec(stmt->block.stmts[i]) != 0)
-            return 1;
+    for (i = 0; i < stmt->block.n; i++) {
+        res = exec(stmt->block.stmts[i]);
+        if (res.code != 0) {
+            ENV = disclose_env(ENV);
+            return res;
+        }
+    }
 
     ENV = disclose_env(ENV);
 
-    return 0;
+    return ExecResult_Ok();
 }
 
 
-static int exec_fun_stmt(Stmt *stmt)
+static ExecResult exec_fun_stmt(Stmt *stmt)
 {
     LoxObj *fun;
 
@@ -110,81 +157,95 @@ static int exec_fun_stmt(Stmt *stmt)
 
     env_def(ENV, stmt->fun.name, fun);
 
-    return 0;
+    return ExecResult_Ok();
 }
 
 
-static int exec_if_stmt(Stmt *stmt)
+static ExecResult exec_if_stmt(Stmt *stmt)
 {
     LoxObj *cond;
 
     if ((cond = eval(stmt->ifelse.cond)) == NULL)
-        return 1;
+        return ExecResult_Err();
 
     if (is_obj_truthy(cond))
         return exec(stmt->ifelse.conseq);
     else if (stmt->ifelse.alt != NULL)
         return exec(stmt->ifelse.alt);
     else
-        return 0;
+        return ExecResult_Ok();
 }
 
 
-static int exec_print_stmt(Stmt *stmt)
+static ExecResult exec_print_stmt(Stmt *stmt)
 {
     LoxObj *obj;
 
     if ((obj = eval(stmt->expr)) == NULL)
-        return 1;
+        return ExecResult_Err();
 
     print_obj(obj);
 
-    return 0;
+    return ExecResult_Ok();
 }
 
 
-static int exec_expr_stmt(Stmt *stmt)
+static ExecResult exec_expr_stmt(Stmt *stmt)
 {
-    return (eval(stmt->expr) == NULL);
+    if (eval(stmt->expr) == NULL)
+        return ExecResult_Err();
+    else
+        return ExecResult_Ok();
 }
 
 
-static int exec_var_stmt(Stmt *stmt)
+static ExecResult exec_return_stmt(Stmt *stmt)
+{
+    LoxObj *obj;
+
+    if ((obj = eval(stmt->expr)) == NULL)
+        return ExecResult_Err();
+    else
+        return ExecResult_Return(obj);
+}
+
+
+static ExecResult exec_var_stmt(Stmt *stmt)
 {
     LoxObj *obj;
 
     if (stmt->var.expr != NULL) {
         if ((obj = eval(stmt->var.expr)) == NULL)
-            return 1;
+            return ExecResult_Err();
     } else {
         obj = new_nil_obj();
     }
 
     env_def(ENV, stmt->var.name, obj);
 
-    return 0;
+    return ExecResult_Ok();
 }
 
 
-static int exec_while_stmt(Stmt *stmt)
+static ExecResult exec_while_stmt(Stmt *stmt)
 {
-    int res;
+    ExecResult res;
     LoxObj *obj;
 
     while (true) {
         if (stmt->whileloop.cond != NULL) {
             if ((obj = eval(stmt->whileloop.cond)) == NULL)
-                return 1;
+                return ExecResult_Err();
 
             if (!is_obj_truthy(obj))
-                return 0;
+                return ExecResult_Ok();
         }
 
-        if ((res = exec(stmt->whileloop.body)) != 0)
+        if ((res = exec(stmt->whileloop.body)).code != 0)
             return res;
     }
 
-    return 0;
+    return ExecResult_Ok();
 }
 
 
@@ -290,6 +351,12 @@ static LoxObj *eval_binary(const Expr *expr)
             else
                 log_error(LOX_RUNTIME_ERR, "operands must be numbers");
             break;
+        case TOKEN_LESS_EQUAL:
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_bool_obj(left->fval <= right->fval); 
+            else
+                log_error(LOX_RUNTIME_ERR, "operands must be numbers");
+            break;
         default:
             log_error(LOX_RUNTIME_ERR, "unexpected binary operator");
             break;
@@ -357,16 +424,25 @@ cleanup:
 static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
 {
     unsigned i;
+    Stmt *block;
+    ExecResult res;
 
     ENV = enclose_env(ENV);
 
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
         env_def(ENV, self->fun.declaration->fun.params[i]->lexeme, args[i]);
+    }
 
-    if (exec_block_stmt(self->fun.declaration->fun.body) != 0)
-        return NULL;
+    block = self->fun.declaration->fun.body;
+    res = exec_block_stmt(block);
 
     ENV = disclose_env(ENV);
+
+    if (res.code < 0)
+        return NULL;
+
+    if (res.value != NULL)
+        return res.value;
 
     return new_nil_obj();
 }

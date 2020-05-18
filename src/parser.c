@@ -20,6 +20,7 @@ static Stmt *var_declaration(struct tokenlist *tlist);
 static Stmt *statement(struct tokenlist *tlist);
 static Stmt *for_stmt(struct tokenlist *tlist);
 static Stmt *print_stmt(struct tokenlist *tlist);
+static Stmt *return_stmt(struct tokenlist *tlist);
 static Stmt *block_stmt(struct tokenlist *tlist);
 static Stmt *if_stmt(struct tokenlist *tlist);
 static Stmt *while_stmt(struct tokenlist *tlist);
@@ -254,6 +255,9 @@ static Stmt *statement(struct tokenlist *tlist)
         case TOKEN_PRINT:
             get_token(tlist);
             return print_stmt(tlist);
+        case TOKEN_RETURN:
+            get_token(tlist);
+            return return_stmt(tlist);
         case TOKEN_WHILE:
             get_token(tlist);
             return while_stmt(tlist);
@@ -359,6 +363,23 @@ static Stmt *print_stmt(struct tokenlist *tlist)
     } 
 
     return new_print_stmt(expr);
+}
+
+
+static Stmt *return_stmt(struct tokenlist *tlist)
+{
+    Expr *expr;
+
+    if ((expr = expression(tlist)) == NULL)
+        return NULL;
+
+    if (take_token(tlist, TOKEN_SEMICOLON) == NULL) {
+        free_expr(expr);
+        log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
+        return NULL;
+    } 
+
+    return new_return_stmt(expr);
 }
 
 

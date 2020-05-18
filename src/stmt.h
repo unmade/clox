@@ -9,6 +9,7 @@ enum StmtType {
     STMT_EXPR,
     STMT_IF,
     STMT_PRINT,
+    STMT_RETURN,
     STMT_VAR,
     STMT_WHILE,
 };
@@ -31,6 +32,7 @@ Stmt *new_fun_stmt(char *name, size_t n, Token **params, Stmt *body);
 Stmt *new_expr_stmt(Expr *expr);
 Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt);
 Stmt *new_print_stmt(Expr *expr);
+Stmt *new_return_stmt(Expr *expr);
 Stmt *new_var_stmt(char *name, Expr *expr);
 Stmt *new_while_stmt(Expr *cond, Stmt *body);
 
