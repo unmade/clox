@@ -16,3 +16,33 @@ fun main() {
 
 
 main();
+
+
+fun makeCounter() {
+  var i = 0;
+  fun count() {
+    i = i + 1;
+    print i;
+  }
+
+  return count;
+}
+
+var counter = makeCounter();
+counter(); // "1".
+counter(); // "2".
+
+
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
+
+  print 2;
+  showA();
+  //print 2;
+  var a = "block";
+  //print a;
+  showA();
+}

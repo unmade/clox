@@ -69,7 +69,7 @@ static Token *take_token(struct tokenlist *tlist, TokenType tok_type)
 
 Stmt **parse(Token *tokens)
 {
-    int i;
+    unsigned i;
     size_t n;
     bool has_error;
     struct tokenlist tlist;
@@ -389,44 +389,39 @@ static Stmt *block_stmt(struct tokenlist *tlist)
     unsigned i;
     bool has_error;
 
+    Token *t;
     Stmt *stmt, **stmts;
-    Token *first, *t;
 
-    n = 0;
-    first = get_token(tlist);
-    for (t = first; t != NULL && t->type != TOKEN_RIGHT_BRACE; t = get_token(tlist)) {
-        if (t->type == TOKEN_SEMICOLON)
-            n++;
-    }
-
-    if (t == NULL) {
-        log_error(LOX_SYNTAX_ERR, "expected '}' at the end of the block");
-        return NULL;
-    }
-
-    stmts = (Stmt **) calloc(n + 1, sizeof(Stmt *));
-
+    n = 1;
     i = 0;
     has_error = false;
-    tlist->curr = first;
-    while ((t = peek_token(tlist)) != NULL && t->type != TOKEN_RIGHT_BRACE) {
+    stmts = (Stmt **) calloc(n, sizeof(Stmt *));
+
+    while (!has_error && (t = peek_token(tlist)) != NULL && t->type != TOKEN_RIGHT_BRACE) {
         if ((stmt = declaration(tlist)) == NULL)
             has_error = true;
-        else
-            stmts[i++] = stmt;
+        if (i >= n)
+            stmts = (Stmt **) realloc(stmts, sizeof(Stmt *) * (n *= 2));
+        stmts[i++] = stmt;
     }
 
-    if (has_error) {
-        n = i;
-        for (i = 0; i < n; i++)
-            free_stmt(stmts[i]);
-        free(stmts);
-        return NULL;
-    }
+    if (has_error)
+        goto cleanup; 
 
-    get_token(tlist);
+    if (take_token(tlist, TOKEN_RIGHT_BRACE) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected '}' at the end of the block");
+        goto cleanup;
+    }
 
     return new_block_stmt(i, stmts);
+
+cleanup:
+    n = i;
+    for (i = 0; i < n; i++)
+        free_stmt(stmts[i]);
+    free(stmts);
+
+    return NULL;
 }
 
 
