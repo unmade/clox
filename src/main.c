@@ -39,10 +39,11 @@ int main(int argc, char *argv[])
         if ((stmts = parse(tokens)) == NULL)
             continue;
 
-        resolve(stmts);
+        if (resolve(stmts) != 0)
+            continue;
 
-//        if (interpret(stmts) != 0)
-//            continue;
+        if (interpret(stmts) != 0)
+            continue;
 
         free_stmts(stmts);
         free_tokens(tokens); 

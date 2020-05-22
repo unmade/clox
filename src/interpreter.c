@@ -154,6 +154,8 @@ static ExecResult exec_fun_stmt(Stmt *stmt)
     LoxObj *fun;
 
     fun = new_fun_obj(stmt, stmt->fun.n);
+    if (ENV->next != NULL)
+        fun->fun.closure = env_copy(ENV);
 
     env_def(ENV, stmt->fun.name, fun);
 
@@ -427,7 +429,11 @@ static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
     Stmt *block;
     ExecResult res;
 
-    ENV = enclose_env(ENV);
+    LoxEnv *env = ENV;
+    if (self->fun.closure != NULL)
+        ENV = enclose_env(self->fun.closure);
+    else
+        ENV = enclose_env(ENV);
 
     for (i = 0; i < argc; i++) {
         env_def(ENV, self->fun.declaration->fun.params[i]->lexeme, args[i]);
@@ -437,6 +443,7 @@ static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
     res = exec_block_stmt(block);
 
     ENV = disclose_env(ENV);
+    ENV = env;
 
     if (res.code < 0)
         return NULL;

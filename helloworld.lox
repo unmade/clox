@@ -44,7 +44,7 @@ var a = "global";
   showA();
 }
 
-var a = "outer";
-{
-  var a = a;
-}
+//var a = "outer";
+//{
+//  var a = a;
+//}

@@ -35,6 +35,7 @@ void Scope_Free(Scope *scope)
 
 typedef struct {
     Scope *scopes;
+    bool has_error;
 } Resolver;
 
 
@@ -43,6 +44,7 @@ Resolver *Resolver_New()
     Resolver *resolver = (Resolver *) malloc(sizeof(Resolver)); 
 
     resolver->scopes = NULL;
+    resolver->has_error = false;
 
     return resolver;
 }
@@ -66,7 +68,7 @@ static void Resolver_Resolve_GroupingExpr(Resolver *resolver, Expr *expr);
 static void Resolver_Resolve_UnaryExpr(Resolver *resolver, Expr *expr);
 static void Resolver_Resolve_VarExpr(Resolver *resolver, Expr *expr);
 
-static void Resolver_ResolveLocal(Resolver *resolver, char *name);
+static void Resolver_ResolveLocal(Resolver *resolver, char *name, Expr *expr);
 
 static void Resolver_BeginScope(Resolver *resolver);
 static void Resolver_EndScope(Resolver *resolver);
@@ -74,7 +76,7 @@ static void Resolver_Declare(Resolver *resolver, char *name);
 static void Resolver_Define(Resolver *resolver, char *name);
 
 
-void resolve(Stmt **stmts)
+int resolve(Stmt **stmts)
 {
     unsigned i;
     Resolver *resolver;
@@ -83,6 +85,8 @@ void resolve(Stmt **stmts)
 
     for (i = 0; stmts[i] != NULL; i++)
         Resolver_Resolve_Stmt(resolver, stmts[i]);
+
+    return resolver->has_error;
 }
 
 
@@ -211,7 +215,7 @@ static void Resolver_Resolve_Expr(Resolver *resolver, Expr *expr)
 static void Resolver_Resolve_AssignExpr(Resolver *resolver, Expr *expr)
 {
     Resolver_Resolve_Expr(resolver, expr->assign.value);
-    Resolver_ResolveLocal(resolver, expr->assign.name->lexeme);
+    Resolver_ResolveLocal(resolver, expr->assign.name->lexeme, expr);
 }
 
 
@@ -252,26 +256,29 @@ static void Resolver_Resolve_VarExpr(Resolver *resolver, Expr *expr)
     if (resolver->scopes != NULL) {
         defined = DICT_GET(bool, resolver->scopes->storage, expr->varname->lexeme);
         if ((defined != NULL) && !*defined) {
+            resolver->has_error = true;
             log_error(LOX_SYNTAX_ERR, "cannot read local variable in its own initializer");
             return;
         }
     }
 
-    Resolver_ResolveLocal(resolver, expr->varname->lexeme);
+    Resolver_ResolveLocal(resolver, expr->varname->lexeme, expr);
 
     return;
 }
 
 
-static void Resolver_ResolveLocal(Resolver *resolver, char *name)
+static void Resolver_ResolveLocal(Resolver *resolver, char *name, Expr *expr)
 {
     unsigned i;
     Scope *scope;
 
     for (i = 0, scope = resolver->scopes; scope != NULL; scope = scope->next, i++) {
-        if (DICT_GET(bool, scope->storage, name) != NULL)
+        if (DICT_GET(bool, scope->storage, name) != NULL) {
+            expr->distance = i;
             // save position;
             return;
+        }
     }
 }
 

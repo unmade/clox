@@ -10,6 +10,7 @@ static Entry **new_entries(size_t n);
 static void free_entries(size_t n, Entry **entries);
 
 static Entry *Entry_New(char *key, void *obj, unsigned hashval);
+static Entry *Entry_Copy(Entry *entry);
 static void Entry_Free(Entry *entry);
 
 static unsigned hash_str(char *s);
@@ -26,6 +27,26 @@ Dict *Dict_New()
     dict->used = 0;
 
     return dict;
+}
+
+
+Dict *Dict_Copy(Dict *dict)
+{
+    unsigned i;
+    Dict *copy;
+
+    copy = (Dict *) malloc(sizeof(Dict));
+
+    copy->capacity = dict->capacity;
+    copy->fill = dict->fill;
+    copy->used = dict->used;
+
+    copy->entries = new_entries(copy->capacity);
+    for (i = 0; i < copy->capacity; i++)
+        if (dict->entries[i] != NULL)
+            copy->entries[i] = Entry_Copy(dict->entries[i]);
+
+    return copy;
 }
 
 
@@ -66,6 +87,21 @@ static Entry *Entry_New(char *key, void *value, unsigned hashval)
     entry->deleted = false;
 
     return entry;
+}
+
+
+static Entry *Entry_Copy(Entry *entry)
+{
+    Entry *copy;
+
+    copy = (Entry *) malloc(sizeof(Entry));
+
+    copy->key = strdup(entry->key);
+    copy->value = entry->value;
+    copy->hashval = entry->hashval;
+    copy->deleted = entry->deleted;
+
+    return copy;
 }
 
 

@@ -3,6 +3,6 @@
 
 #include "stmt.h"
 
-void resolve(Stmt **stmts);
+int resolve(Stmt **stmts);
 
 #endif

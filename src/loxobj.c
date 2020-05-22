@@ -36,6 +36,7 @@ LoxObj *new_fun_obj(Stmt *declaration, unsigned arity)
     obj->type = LOX_OBJ_FUN;
     obj->fun.declaration = declaration;
     obj->fun.arity = arity;
+    obj->fun.closure = NULL;
 
     return obj;
 }

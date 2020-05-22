@@ -23,6 +23,7 @@ typedef struct {
 } Dict;
 
 Dict *Dict_New();
+Dict *Dict_Copy(Dict *dict);
 void Dict_Free();
 
 void *Dict_Get(Dict *d, char *key);

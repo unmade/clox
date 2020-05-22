@@ -15,6 +15,7 @@ enum ExprType {
 
 
 typedef struct expr {
+    unsigned distance;
     enum ExprType type;
     union {
         struct { Token *name; struct expr *value; } assign;

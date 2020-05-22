@@ -5,6 +5,8 @@
 
 #include "stmt.h"
 
+struct loxenv;  // forward declaration for LoxEnv
+
 enum LoxObjType {
     LOX_OBJ_BOOL = 0,
     LOX_OBJ_CALLABLE,
@@ -25,6 +27,7 @@ typedef struct loxobj {
         float fval;
         char *sval;
         struct {
+            struct loxenv *closure;
             Stmt *declaration;
             unsigned arity;
         } fun;

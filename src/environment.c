@@ -17,6 +17,20 @@ LoxEnv *new_env()
 }
 
 
+LoxEnv *env_copy(LoxEnv *env)
+{
+    LoxEnv *copy = (LoxEnv *) malloc(sizeof(LoxEnv));
+
+    copy->next = NULL;
+    if (env->next != NULL)
+        copy->next = env_copy(env->next);
+
+    copy->storage = Dict_Copy(env->storage);
+
+    return copy;
+}
+
+
 void free_env(LoxEnv *env)
 {
     Dict_Free(env->storage);

@@ -10,6 +10,7 @@ typedef struct loxenv {
 } LoxEnv;
 
 LoxEnv *new_env();
+LoxEnv *env_copy();
 void free_env(LoxEnv *env);
 
 LoxEnv *enclose_env(LoxEnv *env);

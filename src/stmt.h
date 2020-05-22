@@ -3,6 +3,8 @@
 
 #include "expr.h"
 
+struct loxenv;
+
 enum StmtType {
     STMT_BLOCK = 0,
     STMT_FUN,
