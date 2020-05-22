@@ -11,7 +11,7 @@ LoxEnv *new_env()
     LoxEnv *env = (LoxEnv *) malloc(sizeof(LoxEnv));
 
     env->next = NULL;
-    env->storage = new_dict();
+    env->storage = Dict_New();
 
     return env;
 }
@@ -19,7 +19,7 @@ LoxEnv *new_env()
 
 void free_env(LoxEnv *env)
 {
-    free_dict(env->storage);
+    Dict_Free(env->storage);
     free(env);
 }
 
@@ -51,8 +51,8 @@ int env_assign(LoxEnv *env, char *name, LoxObj *obj)
     LoxObj *o;
 
     for (e = env; e != NULL; e = e->next)
-        if ((o = dict_get(e->storage, name)) != NULL) {
-            dict_set(e->storage, name, obj);
+        if ((o = DICT_GET(LoxObj, e->storage, name)) != NULL) {
+            DICT_SET(e->storage, name, obj);
             return 0;
         }
 
@@ -63,7 +63,7 @@ int env_assign(LoxEnv *env, char *name, LoxObj *obj)
 
 void env_def(LoxEnv *env, char *name, LoxObj *obj)
 {
-    dict_set(env->storage, name, obj);
+    DICT_SET(env->storage, name, obj);
 }
 
 
@@ -73,7 +73,7 @@ LoxObj *env_get(LoxEnv *env, char *name)
     LoxObj *o;
 
     for (e = env; e != NULL; e = e->next)
-        if ((o = dict_get(e->storage, name)) != NULL)
+        if ((o = DICT_GET(LoxObj, e->storage, name)) != NULL)
             return o;
 
     return NULL;

@@ -9,14 +9,14 @@
 static Entry **new_entries(size_t n);
 static void free_entries(size_t n, Entry **entries);
 
-static Entry *new_entry(char *key, LoxObj *obj, unsigned hashval);
-static void free_entry(Entry *entry);
+static Entry *Entry_New(char *key, void *obj, unsigned hashval);
+static void Entry_Free(Entry *entry);
 
 static unsigned hash_str(char *s);
-static void dict_resize(Dict *dict);
+static void Dict_Resize(Dict *dict);
 
 
-Dict *new_dict()
+Dict *Dict_New()
 {
     Dict *dict = (Dict *) malloc(sizeof(Dict));
 
@@ -29,7 +29,7 @@ Dict *new_dict()
 }
 
 
-void free_dict(Dict *dict)
+void Dict_Free(Dict *dict)
 {
     free_entries(dict->capacity, dict->entries);
     free(dict);
@@ -48,13 +48,13 @@ static void free_entries(size_t n, Entry **entries)
 
     for (i = 0; i < n; i++) {
         if ((entry = entries[i]) != NULL)
-            free_entry(entry);
+            Entry_Free(entry);
         entries[i] = NULL;
     }
 }
 
 
-static Entry *new_entry(char *key, LoxObj *value, unsigned hashval)
+static Entry *Entry_New(char *key, void *value, unsigned hashval)
 { 
     Entry *entry;
 
@@ -69,7 +69,7 @@ static Entry *new_entry(char *key, LoxObj *value, unsigned hashval)
 }
 
 
-static void free_entry(Entry *entry)
+static void Entry_Free(Entry *entry)
 {
     free(entry->key);
     // I don't think dict should free its values
@@ -78,7 +78,7 @@ static void free_entry(Entry *entry)
 }
 
 
-LoxObj *dict_get(Dict *dict, char *key)
+void *Dict_Get(Dict *dict, char *key)
 {
     unsigned idx, hashval;
     Entry *entry;
@@ -96,7 +96,7 @@ LoxObj *dict_get(Dict *dict, char *key)
 }
 
 
-void dict_set(Dict *dict, char *key, LoxObj *value)
+void Dict_Set(Dict *dict, char *key, void *value)
 {
     unsigned idx, target_idx, hashval;
     bool seen;
@@ -123,7 +123,7 @@ void dict_set(Dict *dict, char *key, LoxObj *value)
     if (dict->entries[target_idx] == NULL) {
         dict->fill++;
         dict->used++;
-        dict->entries[target_idx] = new_entry(key, value, hashval);
+        dict->entries[target_idx] = Entry_New(key, value, hashval);
     } else if (dict->entries[target_idx]->deleted) {
         dict->used++;
         dict->entries[target_idx]->value = value;
@@ -133,11 +133,11 @@ void dict_set(Dict *dict, char *key, LoxObj *value)
     }
  
     if (3 * dict->fill >= 2 * dict->capacity)
-        dict_resize(dict);
+        Dict_Resize(dict);
 }
 
 
-static void dict_resize(Dict *dict)
+static void Dict_Resize(Dict *dict)
 {
     unsigned i, idx;
     size_t capacity;
@@ -162,7 +162,7 @@ static void dict_resize(Dict *dict)
                 entries[idx] = entry;
             } else {
                 dict->entries[i] = NULL;
-                free_entry(entry);
+                Entry_Free(entry);
             }
         }
 

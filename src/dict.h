@@ -4,11 +4,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "loxobj.h"
+#define DICT_GET(type, dict, name) (type *) Dict_Get(dict, name)
+#define DICT_SET(dict, name, value) Dict_Set(dict, name, (void *) value)
 
 typedef struct {
     char *key;
-    LoxObj *value;
+    void *value;
     unsigned hashval;
     bool deleted;
 } Entry;
@@ -21,11 +22,10 @@ typedef struct {
     unsigned used;
 } Dict;
 
+Dict *Dict_New();
+void Dict_Free();
 
-Dict *new_dict();
-void free_dict(Dict *d);
-
-LoxObj *dict_get(Dict *d, char *key);
-void dict_set(Dict *d, char *key, LoxObj *value);
+void *Dict_Get(Dict *d, char *key);
+void Dict_Set(Dict *d, char *key, void *value);
 
 #endif
