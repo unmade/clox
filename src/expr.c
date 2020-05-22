@@ -21,7 +21,6 @@ Expr *new_assign_expr(Token *name, Expr *value)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_ASSIGN;
     expr->assign.name = name;
     expr->assign.value = value;
@@ -34,7 +33,6 @@ Expr *new_binary_expr(Expr *left, Token *op, Expr *right)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_BINARY;
     expr->binary.left = left;
     expr->binary.op = op;
@@ -48,7 +46,6 @@ Expr *new_call_expr(Expr *callee, Token *paren, size_t argc, Expr **args)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_CALL;
     expr->call.callee = callee;
     expr->call.paren = paren;
@@ -63,7 +60,6 @@ Expr *new_grouping_expr(Expr *group)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_GROUPING;
     expr->grouping = group;
 
@@ -75,7 +71,6 @@ Expr *new_literal_expr(Token *literal)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_LITERAL;
     expr->literal = literal;
 
@@ -87,7 +82,6 @@ Expr *new_unary_expr(Token *op, Expr *right)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_UNARY;
     expr->unary.op = op;
     expr->unary.right = right;
@@ -100,7 +94,6 @@ Expr *new_var_expr(Token *name)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
 
-    expr->distance = -1;
     expr->type = EXPR_VAR;
     expr->varname = name;
 

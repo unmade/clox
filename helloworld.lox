@@ -43,8 +43,3 @@ var a = "global";
   var a = "block";
   showA();
 }
-
-//var a = "outer";
-//{
-//  var a = a;
-//}

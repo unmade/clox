@@ -33,9 +33,16 @@ void Scope_Free(Scope *scope)
 }
 
 
+enum FunType {
+    FUN_NONE,
+    FUN_FUN,
+};
+
+
 typedef struct {
     Scope *scopes;
     bool has_error;
+    enum FunType curr_fun;
 } Resolver;
 
 
@@ -45,6 +52,7 @@ Resolver *Resolver_New()
 
     resolver->scopes = NULL;
     resolver->has_error = false;
+    resolver->curr_fun = FUN_NONE;
 
     return resolver;
 }
@@ -67,8 +75,6 @@ static void Resolver_Resolve_CallExpr(Resolver *resolver, Expr *expr);
 static void Resolver_Resolve_GroupingExpr(Resolver *resolver, Expr *expr);
 static void Resolver_Resolve_UnaryExpr(Resolver *resolver, Expr *expr);
 static void Resolver_Resolve_VarExpr(Resolver *resolver, Expr *expr);
-
-static void Resolver_ResolveLocal(Resolver *resolver, char *name, Expr *expr);
 
 static void Resolver_BeginScope(Resolver *resolver);
 static void Resolver_EndScope(Resolver *resolver);
@@ -135,9 +141,13 @@ static void Resolver_Resolve_ExprStmt(Resolver *resolver, Stmt *stmt)
 static void Resolver_Resolve_FunStmt(Resolver *resolver, Stmt *stmt)
 {
     unsigned i;
+    enum FunType curr_fun;
 
     Resolver_Declare(resolver, stmt->fun.name);
     Resolver_Define(resolver, stmt->fun.name);
+
+    curr_fun = resolver->curr_fun;
+    resolver->curr_fun = FUN_FUN;
 
     Resolver_BeginScope(resolver);
 
@@ -146,6 +156,8 @@ static void Resolver_Resolve_FunStmt(Resolver *resolver, Stmt *stmt)
         Resolver_Define(resolver, stmt->fun.params[i]->lexeme);
     }
     Resolver_Resolve_Stmt(resolver, stmt->fun.body);
+
+    resolver->curr_fun = curr_fun;
 
     Resolver_EndScope(resolver);
 }
@@ -168,6 +180,11 @@ static void Resolver_Resolve_PrintStmt(Resolver *resolver, Stmt *stmt)
 
 static void Resolver_Resolve_ReturnStmt(Resolver *resolver, Stmt *stmt)
 {
+    if (resolver->curr_fun == FUN_NONE) {
+        resolver->has_error = true;
+        log_error(LOX_SYNTAX_ERR, "cannot return from top-level code");
+        return;
+    }
     if (stmt->expr != NULL)
         Resolver_Resolve_Expr(resolver, stmt->expr);
 }
@@ -215,7 +232,6 @@ static void Resolver_Resolve_Expr(Resolver *resolver, Expr *expr)
 static void Resolver_Resolve_AssignExpr(Resolver *resolver, Expr *expr)
 {
     Resolver_Resolve_Expr(resolver, expr->assign.value);
-    Resolver_ResolveLocal(resolver, expr->assign.name->lexeme, expr);
 }
 
 
@@ -258,26 +274,6 @@ static void Resolver_Resolve_VarExpr(Resolver *resolver, Expr *expr)
         if ((defined != NULL) && !*defined) {
             resolver->has_error = true;
             log_error(LOX_SYNTAX_ERR, "cannot read local variable in its own initializer");
-            return;
-        }
-    }
-
-    Resolver_ResolveLocal(resolver, expr->varname->lexeme, expr);
-
-    return;
-}
-
-
-static void Resolver_ResolveLocal(Resolver *resolver, char *name, Expr *expr)
-{
-    unsigned i;
-    Scope *scope;
-
-    for (i = 0, scope = resolver->scopes; scope != NULL; scope = scope->next, i++) {
-        if (DICT_GET(bool, scope->storage, name) != NULL) {
-            expr->distance = i;
-            // save position;
-            return;
         }
     }
 }
@@ -307,8 +303,15 @@ static void Resolver_EndScope(Resolver *resolver)
 
 static void Resolver_Declare(Resolver *resolver, char *name)
 {
-    if (resolver->scopes != NULL)
-        DICT_SET(resolver->scopes->storage, name, &FALSE);
+    if (resolver->scopes != NULL) {
+        if (DICT_GET(bool, resolver->scopes->storage, name) == NULL) {
+            DICT_SET(resolver->scopes->storage, name, &FALSE);
+        } else {
+            log_error(LOX_SYNTAX_ERR, 
+                      "Variable with name '%s' already declared in this scope", name);
+            resolver->has_error = true;
+        }
+    }
 }
 
 
