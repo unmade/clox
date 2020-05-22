@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "interpreter.h"
 #include "parser.h"
+#include "resolver.h"
 #include "scanner.h"
 #include "stmt.h"
 
@@ -38,8 +39,10 @@ int main(int argc, char *argv[])
         if ((stmts = parse(tokens)) == NULL)
             continue;
 
-        if (interpret(stmts) != 0)
-            continue;
+        resolve(stmts);
+
+//        if (interpret(stmts) != 0)
+//            continue;
 
         free_stmts(stmts);
         free_tokens(tokens); 

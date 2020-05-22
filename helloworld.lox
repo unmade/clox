@@ -28,9 +28,9 @@ fun makeCounter() {
   return count;
 }
 
-//var counter = makeCounter();
-//counter(); // "1".
-//counter(); // "2".
+var counter = makeCounter();
+counter(); // "1".
+counter(); // "2".
 
 
 var a = "global";
@@ -42,4 +42,9 @@ var a = "global";
   showA();
   var a = "block";
   showA();
+}
+
+var a = "outer";
+{
+  var a = a;
 }
