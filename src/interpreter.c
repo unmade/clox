@@ -53,6 +53,7 @@ static ExecResult ExecResult_Err()
 static LoxEnv *init_env();
 static ExecResult exec(Stmt *stmt);
 static ExecResult exec_block_stmt(Stmt *stmt);
+static ExecResult exec_class_stmt(Stmt *stmt);
 static ExecResult exec_fun_stmt(Stmt *stmt);
 static ExecResult exec_expr_stmt(Stmt *stmt);
 static ExecResult exec_if_stmt(Stmt *stmt);
@@ -108,6 +109,8 @@ static ExecResult exec(Stmt *stmt)
     switch (stmt->type) {
         case STMT_BLOCK:
             return exec_block_stmt(stmt);
+        case STMT_CLASS:
+            return exec_class_stmt(stmt);
         case STMT_EXPR:
             return exec_expr_stmt(stmt);
         case STMT_FUN:
@@ -144,6 +147,19 @@ static ExecResult exec_block_stmt(Stmt *stmt)
     }
 
     ENV = disclose_env(ENV);
+
+    return ExecResult_Ok();
+}
+
+
+static ExecResult exec_class_stmt(Stmt *stmt)
+{
+    ExecResult res;
+    LoxObj *klass;
+
+    env_def(ENV, stmt->klass.name->lexeme, new_nil_obj());
+    klass = new_class_obj(stmt->klass.name->lexeme);
+    env_assign(ENV, stmt->klass.name->lexeme, klass);
 
     return ExecResult_Ok();
 }

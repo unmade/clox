@@ -36,6 +36,7 @@ static void Scope_Free();
 
 static void Resolver_Resolve_Stmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_BlockStmt(Resolver *resolver, const Stmt *stmt);
+static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_ExprStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_FunStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_IfStmt(Resolver *resolver, const Stmt *stmt);
@@ -124,6 +125,8 @@ static void Resolver_Resolve_Stmt(Resolver *resolver, const Stmt *stmt)
     switch (stmt->type) {
         case STMT_BLOCK:
             return Resolver_Resolve_BlockStmt(resolver, stmt);
+        case STMT_CLASS:
+            return Resolver_Resolve_ClassStmt(resolver, stmt);
         case STMT_EXPR:
             return Resolver_Resolve_ExprStmt(resolver, stmt);
         case STMT_FUN:
@@ -152,6 +155,13 @@ static void Resolver_Resolve_BlockStmt(Resolver *resolver, const Stmt *stmt)
         Resolver_Resolve_Stmt(resolver, stmt->block.stmts[i]);
 
     Resolver_EndScope(resolver);
+}
+
+
+static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
+{
+    Resolver_Declare(resolver, stmt->klass.name->lexeme);
+    Resolver_Define(resolver, stmt->klass.name->lexeme);
 }
 
 

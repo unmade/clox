@@ -10,6 +10,7 @@ struct loxenv;  // forward declaration for LoxEnv
 enum LoxObjType {
     LOX_OBJ_BOOL = 0,
     LOX_OBJ_CALLABLE,
+    LOX_OBJ_CLASS,
     LOX_OBJ_FUN,
     LOX_OBJ_NIL,
     LOX_OBJ_NUMBER,
@@ -27,20 +28,24 @@ typedef struct loxobj {
         float fval;
         char *sval;
         struct {
-            struct loxenv *closure;
-            Stmt *declaration;
-            unsigned arity;
-        } fun;
+            char *name;
+        } klass;
         struct {
             unsigned arity;
             func_t func;
         } callable;
+        struct {
+            struct loxenv *closure;
+            Stmt *declaration;
+            unsigned arity;
+        } fun;
     };
 } LoxObj;
 
 
 LoxObj *new_bool_obj(bool val);
 LoxObj *new_callable_obj(unsigned arity, func_t func);
+LoxObj *new_class_obj(char *name);
 LoxObj *new_fun_obj(Stmt *declaration, unsigned arity);
 LoxObj *new_nil_obj();
 LoxObj *new_num_obj(float val);

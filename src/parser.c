@@ -15,6 +15,7 @@ struct tokenlist {
 };
 
 static Stmt *declaration(struct tokenlist *tlist);
+static Stmt *class_declaration(struct tokenlist *tlist);
 static Stmt *fun_declaration(struct tokenlist *tlist);
 static Stmt *var_declaration(struct tokenlist *tlist);
 static Stmt *statement(struct tokenlist *tlist);
@@ -115,6 +116,9 @@ void free_stmts(Stmt **stmts)
 
 static Stmt *declaration(struct tokenlist *tlist)
 {
+    if (take_token(tlist, TOKEN_CLASS) != NULL)
+        return class_declaration(tlist);
+
     if (take_token(tlist, TOKEN_FUN) != NULL)
         return fun_declaration(tlist);
 
@@ -122,6 +126,51 @@ static Stmt *declaration(struct tokenlist *tlist)
         return var_declaration(tlist);
 
     return statement(tlist);
+}
+
+
+static Stmt *class_declaration(struct tokenlist *tlist)
+{
+    size_t i, n;
+    Token *name, *token;
+    Stmt *method, **methods;
+
+    if ((name = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected class name");
+        return NULL;
+    }
+
+    if (take_token(tlist, TOKEN_LEFT_BRACE) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected '{' before class body");
+        return NULL;
+    }
+
+    i = 0;
+    n = 1; 
+    methods = (Stmt **) calloc(n, sizeof(Stmt *));
+
+    while ((token = peek_token(tlist)) != NULL && token->type != TOKEN_RIGHT_BRACE) {
+        if ((method = fun_declaration(tlist)) == NULL)
+            goto cleanup;
+        if (i >= n)
+            methods = (Stmt **) realloc(methods, sizeof(Stmt *) * (n *= 2));
+        methods[i++] = method;
+    }
+
+    if (take_token(tlist, TOKEN_RIGHT_BRACE) == NULL) {
+        log_error(LOX_SYNTAX_ERR, "expected '}' after class body");
+        return NULL;
+    }
+
+    return new_klass_stmt(name, i, methods);
+
+cleanup:
+    n = i;
+    for (i = 0; i < n; i++)
+        free_stmt(methods[i]);
+    free(methods);
+
+    return NULL;
 }
 
 

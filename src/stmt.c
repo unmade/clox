@@ -54,6 +54,19 @@ Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt)
 }
 
 
+Stmt *new_klass_stmt(Token *name, size_t n, Stmt **methods)
+{
+    Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
+
+    stmt->type = STMT_CLASS;
+    stmt->klass.name = name;
+    stmt->klass.n = n;
+    stmt->klass.methods = methods;
+
+    return stmt;
+}
+
+
 Stmt *new_print_stmt(Expr *expr)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
@@ -109,6 +122,11 @@ void free_stmt(Stmt *stmt)
             for (i = 0; i < stmt->block.n; i++)
                 free_stmt(stmt->block.stmts[i]); 
             free(stmt->block.stmts);
+            break;
+        case STMT_CLASS:
+            for (i = 0; i < stmt->klass.n; i++)
+                free_stmt(stmt->klass.methods[i]);
+            free(stmt->klass.methods);
             break;
         case STMT_EXPR:
             free_expr(stmt->expr);
