@@ -12,6 +12,7 @@ enum LoxObjType {
     LOX_OBJ_CALLABLE,
     LOX_OBJ_CLASS,
     LOX_OBJ_FUN,
+    LOX_OBJ_INSTANCE,
     LOX_OBJ_NIL,
     LOX_OBJ_NUMBER,
     LOX_OBJ_STRING,
@@ -28,9 +29,6 @@ typedef struct loxobj {
         float fval;
         char *sval;
         struct {
-            char *name;
-        } klass;
-        struct {
             unsigned arity;
             func_t func;
         } callable;
@@ -39,6 +37,12 @@ typedef struct loxobj {
             Stmt *declaration;
             unsigned arity;
         } fun;
+        struct {
+            struct loxobj *klass;
+        } instance;
+        struct {
+            char *name;
+        } klass;
     };
 } LoxObj;
 
@@ -47,6 +51,7 @@ LoxObj *new_bool_obj(bool val);
 LoxObj *new_callable_obj(unsigned arity, func_t func);
 LoxObj *new_class_obj(char *name);
 LoxObj *new_fun_obj(Stmt *declaration, unsigned arity);
+LoxObj *new_instance_obj(LoxObj *klass);
 LoxObj *new_nil_obj();
 LoxObj *new_num_obj(float val);
 LoxObj *new_str_obj(char *s);

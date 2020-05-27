@@ -53,6 +53,17 @@ LoxObj *new_fun_obj(Stmt *declaration, unsigned arity)
 }
 
 
+LoxObj *new_instance_obj(LoxObj *klass)
+{
+    LoxObj *obj = (LoxObj *) malloc(sizeof(LoxObj));
+
+    obj->type = LOX_OBJ_INSTANCE;
+    obj->instance.klass = klass;
+
+    return obj;
+}
+
+
 LoxObj *new_nil_obj()
 {
     LoxObj *obj = (LoxObj *) malloc(sizeof(LoxObj));
@@ -122,6 +133,11 @@ char *str_obj(const LoxObj *obj)
             return strdup((obj->bval) ? "true" : "false");
         case LOX_OBJ_CLASS:
             return strdup(obj->klass.name);
+        case LOX_OBJ_INSTANCE:
+            n = strlen(obj->instance.klass->klass.name) + strlen("instance");
+            s = (char *) calloc(n + 1, sizeof(char));
+            sprintf(s, "%s %s", obj->instance.klass->klass.name, "instance");
+            return s;
         case LOX_OBJ_NUMBER:
             n = snprintf(NULL, 0, "%f", obj->fval);
             s = (char *) malloc(n * sizeof(char));

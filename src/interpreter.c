@@ -11,6 +11,8 @@
 #include "scanner.h"
 #include "stmt.h"
 
+#define UNUSED(x) (void)(x)
+
 typedef struct {
     int code;
     LoxObj *value;
@@ -65,6 +67,7 @@ static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
 static LoxObj *eval_call(const Expr *expr);
+static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *eval_literal(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
@@ -154,7 +157,6 @@ static ExecResult exec_block_stmt(Stmt *stmt)
 
 static ExecResult exec_class_stmt(Stmt *stmt)
 {
-    ExecResult res;
     LoxObj *klass;
 
     env_def(ENV, stmt->klass.name->lexeme, new_nil_obj());
@@ -404,6 +406,10 @@ static LoxObj *eval_call(const Expr *expr)
             f = callee->callable.func;
             arity = callee->callable.arity;
             break;
+        case LOX_OBJ_CLASS:
+            f = class_call;
+            arity = 0;
+            break;
         case LOX_OBJ_FUN:
             f = fun_call;
             arity = callee->fun.arity;
@@ -436,6 +442,14 @@ cleanup:
     if (args != NULL) free(args);
     // maybe free obj later?
     return NULL;
+}
+
+
+static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args)
+{
+    UNUSED(argc);
+    UNUSED(args);
+    return new_instance_obj(self);
 }
 
 
