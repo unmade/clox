@@ -74,28 +74,21 @@ Stmt **parse(Token *tokens)
     bool has_error;
     struct tokenlist tlist;
     Stmt *stmt, **stmts;
-    Token *token;
-
-    if (tokens == NULL)
-        return NULL;
-
-    /* this estimation is not accurate */
-    n = 1;
-    for (token = tokens; token != NULL; token = token->next)
-        if (token->type == TOKEN_SEMICOLON)
-            n++;
-    stmts = (Stmt **) calloc(n + 1, sizeof(Stmt *));
 
     tlist.curr = tokens;
+
+    n = 1;
+    stmts = (Stmt **) calloc(n, sizeof(Stmt *));
 
     has_error = false;
     for (i = 0; peek_token(&tlist) != NULL; i++) {
         if ((stmt = declaration(&tlist)) == NULL) {
             has_error = true;
             break;
-        } else {
-            stmts[i] = stmt;
         }
+        if (i >= n)
+            stmts = (Stmt **) realloc(stmts, sizeof(Stmt *) * (n *= 2));
+        stmts[i] = stmt;
     }
 
     if (has_error) {
