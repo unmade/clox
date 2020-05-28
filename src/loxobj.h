@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include "dict.h"
 #include "stmt.h"
 
 struct loxenv;  // forward declaration for LoxEnv
@@ -39,6 +40,7 @@ typedef struct loxobj {
         } fun;
         struct {
             struct loxobj *klass;
+            Dict *fields;
         } instance;
         struct {
             char *name;

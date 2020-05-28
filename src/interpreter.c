@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "globals.h"
+#include "dict.h"
 #include "environment.h"
 #include "expr.h"
+#include "globals.h"
 #include "interpreter.h"
 #include "logger.h"
 #include "loxobj.h"
@@ -69,7 +70,9 @@ static LoxObj *eval_binary(const Expr *expr);
 static LoxObj *eval_call(const Expr *expr);
 static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args);
+static LoxObj *eval_get(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
+static LoxObj *eval_set(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_var(const Expr *expr);
 static char *joinstr(const char *s1, const char *s2);
@@ -278,10 +281,14 @@ static LoxObj *eval(const Expr *expr)
             return eval_binary(expr);
         case EXPR_CALL:
             return eval_call(expr);
+        case EXPR_GET:
+            return eval_get(expr);
         case EXPR_GROUPING:
             return eval(expr->grouping);
         case EXPR_LITERAL:
             return eval_literal(expr);
+        case EXPR_SET:
+            return eval_set(expr);
         case EXPR_UNARY:
             return eval_unary(expr);
         case EXPR_VAR:
@@ -302,6 +309,27 @@ static LoxObj *eval_assignment(const Expr *expr)
     }
 
     return NULL;
+}
+
+
+static LoxObj *eval_set(const Expr *expr)
+{
+    LoxObj *obj, *value;
+
+    if ((obj = eval(expr->set.object)) == NULL)
+        return NULL;
+
+    if (obj->type != LOX_OBJ_INSTANCE) {
+        log_error(LOX_RUNTIME_ERR, "only instances have fields");
+        return NULL;
+    }
+
+    if ((value = eval(expr->set.value)) == NULL)
+        return NULL;
+
+    DICT_SET(obj->instance.fields, expr->set.name->lexeme, value);
+
+    return value;
 }
 
 
@@ -482,6 +510,22 @@ static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
         return res.value;
 
     return new_nil_obj();
+}
+
+
+static LoxObj *eval_get(const Expr *expr)
+{
+    LoxObj *obj;
+
+    if ((obj = eval(expr->get.object)) == NULL)
+        return NULL;
+
+    if ((obj->type != LOX_OBJ_INSTANCE)) {
+        log_error(LOX_RUNTIME_ERR, "only instances have properties");
+        return NULL;
+    }
+
+    return DICT_GET(LoxObj, obj->instance.fields, expr->get.name->lexeme);
 }
 
 

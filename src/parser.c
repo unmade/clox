@@ -576,12 +576,14 @@ static Expr *assignment(struct tokenlist *tlist)
         if ((rexpr = assignment(tlist)) == NULL)
             goto cleanup;
 
-        if (expr->type != EXPR_VAR) {
-            log_error(LOX_SYNTAX_ERR, "invalid assignment target");
-            goto cleanup;
-        }
+        if (expr->type == EXPR_VAR)
+            return new_assign_expr(expr->varname, rexpr);
 
-        return new_assign_expr(expr->varname, rexpr);
+        if (expr->type == EXPR_GET)
+            return new_set_expr(expr->varname, expr->get.object, rexpr);
+
+        log_error(LOX_SYNTAX_ERR, "invalid assignment target");
+        goto cleanup;
     }
 
     return expr;
@@ -722,6 +724,7 @@ static Expr *unary(struct tokenlist *tlist)
 
 static Expr *call(struct tokenlist *tlist)
 {
+    Token *name;
     Expr *expr, *temp;
 
     if ((expr = primary(tlist)) == NULL)
@@ -734,6 +737,12 @@ static Expr *call(struct tokenlist *tlist)
                 return NULL;
             }
             expr = temp;
+        } else if (take_token(tlist, TOKEN_DOT)) {
+            if ((name = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
+                log_error(LOX_SYNTAX_ERR, "expect property name after '.'");
+                return NULL;
+            }
+            expr = new_get_expr(name, expr);
         } else {
             break;
         }

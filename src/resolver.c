@@ -49,7 +49,9 @@ static void Resolver_Resolve_Expr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_AssignExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_BinaryExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_CallExpr(Resolver *resolver, const Expr *expr);
+static void Resolver_Resolve_GetExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_GroupingExpr(Resolver *resolver, const Expr *expr);
+static void Resolver_Resolve_SetExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_UnaryExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_VarExpr(Resolver *resolver, const Expr *expr);
 
@@ -250,14 +252,18 @@ static void Resolver_Resolve_Expr(Resolver *resolver, const Expr *expr)
             return Resolver_Resolve_BinaryExpr(resolver, expr);
         case EXPR_CALL:
             return Resolver_Resolve_CallExpr(resolver, expr);
+        case EXPR_GET:
+            return Resolver_Resolve_GetExpr(resolver, expr);
         case EXPR_GROUPING:
             return Resolver_Resolve_GroupingExpr(resolver, expr);
+        case EXPR_LITERAL:
+            break;
+        case EXPR_SET:
+            return Resolver_Resolve_SetExpr(resolver, expr);
         case EXPR_UNARY:
             return Resolver_Resolve_UnaryExpr(resolver, expr);
         case EXPR_VAR:
             return Resolver_Resolve_VarExpr(resolver, expr);
-        default:
-            break;
     }
 }
 
@@ -286,9 +292,22 @@ static void Resolver_Resolve_CallExpr(Resolver *resolver, const Expr *expr)
 }
 
 
+static void Resolver_Resolve_GetExpr(Resolver *resolver, const Expr *expr)
+{
+    Resolver_Resolve_Expr(resolver, expr->get.object);
+}
+
+
 static void Resolver_Resolve_GroupingExpr(Resolver *resolver, const Expr *expr)
 {
     Resolver_Resolve_Expr(resolver, expr->grouping);
+}
+
+
+static void Resolver_Resolve_SetExpr(Resolver *resolver, const Expr *expr)
+{
+    Resolver_Resolve_Expr(resolver, expr->set.value);
+    Resolver_Resolve_Expr(resolver, expr->set.object);
 }
 
 

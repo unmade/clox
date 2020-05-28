@@ -7,8 +7,10 @@ enum ExprType {
     EXPR_ASSIGN = 0,
     EXPR_BINARY,
     EXPR_CALL,
+    EXPR_GET,
     EXPR_GROUPING,
     EXPR_LITERAL,
+    EXPR_SET,
     EXPR_UNARY,
     EXPR_VAR,
 };
@@ -20,8 +22,10 @@ typedef struct expr {
         struct { Token *name; struct expr *value; } assign;
         struct { struct expr *left; Token *op; struct expr *right; } binary;
         struct { struct expr *callee; Token *paren; size_t argc; struct expr **args; } call;
+        struct { Token *name; struct expr *object; } get;
         struct expr *grouping;
         Token *literal;
+        struct { Token *name; struct expr *object; struct expr *value; } set;
         struct { Token *op; struct expr *right; } unary;
         Token *varname;
     };
@@ -31,8 +35,10 @@ typedef struct expr {
 Expr *new_assign_expr(Token *name, Expr *value);
 Expr *new_binary_expr(Expr *left, Token *op, Expr *right);
 Expr *new_call_expr(Expr *callee, Token *paren, size_t argc, Expr **args);
+Expr *new_get_expr(Token *name, Expr *object);
 Expr *new_grouping_expr(Expr *expr);
 Expr *new_literal_expr(Token *literal);
+Expr *new_set_expr(Token *name, Expr *object, Expr *value);
 Expr *new_unary_expr(Token *op, Expr *right);
 Expr *new_var_expr(Token *name);
 

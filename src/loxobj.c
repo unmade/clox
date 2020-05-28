@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "dict.h"
 #include "loxobj.h"
 
 
@@ -59,6 +60,7 @@ LoxObj *new_instance_obj(LoxObj *klass)
 
     obj->type = LOX_OBJ_INSTANCE;
     obj->instance.klass = klass;
+    obj->instance.fields = Dict_New();
 
     return obj;
 }

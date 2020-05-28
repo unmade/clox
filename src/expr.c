@@ -56,6 +56,18 @@ Expr *new_call_expr(Expr *callee, Token *paren, size_t argc, Expr **args)
 }
 
 
+Expr *new_get_expr(Token *name, Expr *object)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_GET;
+    expr->get.name = name;
+    expr->get.object = object;
+
+    return expr;
+}
+
+
 Expr *new_grouping_expr(Expr *group)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
@@ -85,6 +97,19 @@ Expr *new_unary_expr(Token *op, Expr *right)
     expr->type = EXPR_UNARY;
     expr->unary.op = op;
     expr->unary.right = right;
+
+    return expr;
+}
+
+
+Expr *new_set_expr(Token *name, Expr *object, Expr *value)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_SET;
+    expr->set.name = name;
+    expr->set.object = object;
+    expr->set.value = value;
 
     return expr;
 }
@@ -121,8 +146,15 @@ void free_expr(Expr *expr)
                 free(expr->call.args);
             }
             break;
+        case EXPR_GET:
+            free_expr(expr->get.object);
+            break;
         case EXPR_GROUPING:
             free_expr(expr->grouping);
+            break;
+        case EXPR_SET:
+            free_expr(expr->set.object);
+            free_expr(expr->set.value);
             break;
         case EXPR_UNARY:
             free_expr(expr->unary.right);
