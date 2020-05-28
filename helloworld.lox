@@ -55,3 +55,11 @@ print DevonshireCream; // Prints "DevonshireCream".
 class Bagel {}
 var bagel = Bagel();
 print bagel; // Prints "Bagel instance".
+
+class Bacon {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
+}
+
+Bacon().eat(); // Prints "Crunch crunch crunch!".

@@ -160,10 +160,22 @@ static ExecResult exec_block_stmt(Stmt *stmt)
 
 static ExecResult exec_class_stmt(Stmt *stmt)
 {
-    LoxObj *klass;
+    unsigned i;
+    LoxObj *klass, *method;
+    Dict *methods;
 
     env_def(ENV, stmt->klass.name->lexeme, new_nil_obj());
-    klass = new_class_obj(stmt->klass.name->lexeme);
+
+    methods = Dict_New(); 
+    for (i = 0; i < stmt->klass.n; i++) {
+        method = new_fun_obj(stmt->klass.methods[i], stmt->klass.methods[i]->fun.n);
+        if (ENV->next != NULL)
+            method->fun.closure = ENV;
+        DICT_SET(methods, method->fun.declaration->fun.name, method);
+    }
+
+    klass = new_class_obj(stmt->klass.name->lexeme, methods);
+
     env_assign(ENV, stmt->klass.name->lexeme, klass);
 
     return ExecResult_Ok();
@@ -515,7 +527,8 @@ static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
 
 static LoxObj *eval_get(const Expr *expr)
 {
-    LoxObj *obj;
+    char *name;
+    LoxObj *obj, *prop;
 
     if ((obj = eval(expr->get.object)) == NULL)
         return NULL;
@@ -525,7 +538,16 @@ static LoxObj *eval_get(const Expr *expr)
         return NULL;
     }
 
-    return DICT_GET(LoxObj, obj->instance.fields, expr->get.name->lexeme);
+    name = expr->get.name->lexeme;
+
+    if ((prop = DICT_GET(LoxObj, obj->instance.fields, name)) != NULL)
+        return prop;
+
+    if ((prop = DICT_GET(LoxObj, obj->instance.klass->klass.methods, name)) != NULL)
+        return prop;
+
+    log_error(LOX_RUNTIME_ERR, "undefined property '%s'", name);
+    return NULL;
 }
 
 

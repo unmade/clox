@@ -87,7 +87,7 @@ Stmt **parse(Token *tokens)
             has_error = true;
             break;
         }
-        if (i >= n)
+        if (i >= n - 1)
             stmts = (Stmt **) realloc(stmts, sizeof(Stmt *) * (n *= 2));
         stmts[i] = stmt;
     }
@@ -97,7 +97,7 @@ Stmt **parse(Token *tokens)
         return NULL;
     }
 
-    stmts[i++] = NULL;
+    stmts[i] = NULL;
 
     return stmts;
 }
@@ -159,7 +159,7 @@ static Stmt *class_declaration(struct tokenlist *tlist)
 
     if (take_token(tlist, TOKEN_RIGHT_BRACE) == NULL) {
         log_error(LOX_SYNTAX_ERR, "expected '}' after class body");
-        return NULL;
+        goto cleanup;
     }
 
     return new_klass_stmt(name, i, methods);
@@ -580,7 +580,7 @@ static Expr *assignment(struct tokenlist *tlist)
             return new_assign_expr(expr->varname, rexpr);
 
         if (expr->type == EXPR_GET)
-            return new_set_expr(expr->varname, expr->get.object, rexpr);
+            return new_set_expr(expr->get.name, expr->get.object, rexpr);
 
         log_error(LOX_SYNTAX_ERR, "invalid assignment target");
         goto cleanup;
@@ -739,6 +739,7 @@ static Expr *call(struct tokenlist *tlist)
             expr = temp;
         } else if (take_token(tlist, TOKEN_DOT)) {
             if ((name = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
+                free_expr(expr);
                 log_error(LOX_SYNTAX_ERR, "expect property name after '.'");
                 return NULL;
             }

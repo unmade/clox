@@ -10,8 +10,9 @@ bool FALSE = false;
 bool TRUE = true;
 
 enum FunType {
-    FUN_NONE,
-    FUN_FUN,
+    FUN_TYPE_NONE,
+    FUN_TYPE_FUN,
+    FUN_TYPE_METHOD,
 };
 
 
@@ -24,7 +25,7 @@ typedef struct scope {
 typedef struct {
     Scope *scopes;
     bool has_error;
-    enum FunType curr_fun;
+    enum FunType fun_type;
 } Resolver;
 
 
@@ -39,6 +40,7 @@ static void Resolver_Resolve_BlockStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_ExprStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_FunStmt(Resolver *resolver, const Stmt *stmt);
+static void Resolver_Resolve_Fun(Resolver *resolver, const Stmt *stmt, enum FunType fun_type);
 static void Resolver_Resolve_IfStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_PrintStmt(Resolver *resolver, const Stmt *stmt);
 static void Resolver_Resolve_ReturnStmt(Resolver *resolver, const Stmt *stmt);
@@ -105,7 +107,7 @@ static Resolver *Resolver_New()
 
     resolver->scopes = NULL;
     resolver->has_error = false;
-    resolver->curr_fun = FUN_NONE;
+    resolver->fun_type = FUN_TYPE_NONE;
 
     return resolver;
 }
@@ -162,8 +164,16 @@ static void Resolver_Resolve_BlockStmt(Resolver *resolver, const Stmt *stmt)
 
 static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
 {
+    unsigned i;
+    enum FunType fun_type;
+
     Resolver_Declare(resolver, stmt->klass.name->lexeme);
     Resolver_Define(resolver, stmt->klass.name->lexeme);
+
+    for (i = 0; i < stmt->klass.n; i++) {
+        fun_type = FUN_TYPE_METHOD;
+        Resolver_Resolve_Fun(resolver, stmt->klass.methods[i], fun_type);
+    }
 }
 
 
@@ -175,24 +185,29 @@ static void Resolver_Resolve_ExprStmt(Resolver *resolver, const Stmt *stmt)
 
 static void Resolver_Resolve_FunStmt(Resolver *resolver, const Stmt *stmt)
 {
-    unsigned i;
-    enum FunType curr_fun;
-
     Resolver_Declare(resolver, stmt->fun.name);
     Resolver_Define(resolver, stmt->fun.name);
+    Resolver_Resolve_Fun(resolver, stmt, FUN_TYPE_FUN);
+}
 
-    curr_fun = resolver->curr_fun;
-    resolver->curr_fun = FUN_FUN;
+
+static void Resolver_Resolve_Fun(Resolver *resolver, const Stmt *stmt, enum FunType fun_type)
+{
+    unsigned i;
+    enum FunType curr;
+
+    curr = resolver->fun_type;
+    resolver->fun_type = fun_type;
 
     Resolver_BeginScope(resolver);
 
     for (i = 0; i < stmt->fun.n; i++) {
-        Resolver_Declare(resolver, stmt->fun.params[i]->lexeme);
-        Resolver_Define(resolver, stmt->fun.params[i]->lexeme);
+      Resolver_Declare(resolver, stmt->fun.params[i]->lexeme);
+      Resolver_Define(resolver, stmt->fun.params[i]->lexeme);
     }
     Resolver_Resolve_Stmt(resolver, stmt->fun.body);
 
-    resolver->curr_fun = curr_fun;
+    resolver->fun_type = curr;
 
     Resolver_EndScope(resolver);
 }
@@ -215,7 +230,7 @@ static void Resolver_Resolve_PrintStmt(Resolver *resolver, const Stmt *stmt)
 
 static void Resolver_Resolve_ReturnStmt(Resolver *resolver, const Stmt *stmt)
 {
-    if (resolver->curr_fun == FUN_NONE) {
+    if (resolver->fun_type == FUN_TYPE_NONE) {
         resolver->has_error = true;
         log_error(LOX_SYNTAX_ERR, "cannot return from top-level code");
         return;
