@@ -90,6 +90,17 @@ Expr *new_literal_expr(Token *literal)
 }
 
 
+Expr *new_this_expr(Token *keyword)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_THIS;
+    expr->keyword = keyword;
+
+    return expr;
+}
+
+
 Expr *new_unary_expr(Token *op, Expr *right)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));

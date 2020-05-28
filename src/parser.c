@@ -837,6 +837,9 @@ static Expr *primary(struct tokenlist *tlist)
         || token->type == TOKEN_TRUE)
         return new_literal_expr(token);
 
+    if (token->type == TOKEN_THIS)
+        return new_this_expr(token);
+
     if (token->type == TOKEN_IDENTIFIER)
         return new_var_expr(token);
 

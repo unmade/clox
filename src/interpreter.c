@@ -72,6 +72,7 @@ static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *eval_get(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
+static LoxObj *eval_this(const Expr *expr);
 static LoxObj *eval_set(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_var(const Expr *expr);
@@ -299,6 +300,8 @@ static LoxObj *eval(const Expr *expr)
             return eval(expr->grouping);
         case EXPR_LITERAL:
             return eval_literal(expr);
+        case EXPR_THIS:
+            return eval_this(expr);
         case EXPR_SET:
             return eval_set(expr);
         case EXPR_UNARY:
@@ -321,6 +324,17 @@ static LoxObj *eval_assignment(const Expr *expr)
     }
 
     return NULL;
+}
+
+
+static LoxObj *eval_this(const Expr *expr)
+{
+    LoxObj *obj;
+
+    if ((obj = env_get(ENV, expr->keyword->lexeme)) == NULL)
+        log_error(LOX_RUNTIME_ERR, "undefined variable '%s'", expr->keyword->lexeme);
+
+    return obj;
 }
 
 
@@ -528,7 +542,8 @@ static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
 static LoxObj *eval_get(const Expr *expr)
 {
     char *name;
-    LoxObj *obj, *prop;
+    LoxObj *obj, *prop, *method;
+    LoxEnv *env;
 
     if ((obj = eval(expr->get.object)) == NULL)
         return NULL;
@@ -543,8 +558,19 @@ static LoxObj *eval_get(const Expr *expr)
     if ((prop = DICT_GET(LoxObj, obj->instance.fields, name)) != NULL)
         return prop;
 
-    if ((prop = DICT_GET(LoxObj, obj->instance.klass->klass.methods, name)) != NULL)
-        return prop;
+    if ((prop = DICT_GET(LoxObj, obj->instance.klass->klass.methods, name)) != NULL) {
+        method = new_fun_obj(prop->fun.declaration, prop->fun.arity);
+
+        if (prop->fun.closure != NULL)
+            env = enclose_env(prop->fun.closure);
+        else
+            env = enclose_env(ENV);
+        
+        env_def(env, "this", obj);
+        method->fun.closure = env;
+
+        return method;
+    }
 
     log_error(LOX_RUNTIME_ERR, "undefined property '%s'", name);
     return NULL;

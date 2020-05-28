@@ -6,8 +6,15 @@
 #include "logger.h"
 #include "stmt.h"
 
+#define UNUSED(x) (void)(x)
+
 bool FALSE = false;
 bool TRUE = true;
+
+enum ClassType {
+    CLASS_TYPE_NONE,
+    CLASS_TYPE_CLASS,
+};
 
 enum FunType {
     FUN_TYPE_NONE,
@@ -25,6 +32,7 @@ typedef struct scope {
 typedef struct {
     Scope *scopes;
     bool has_error;
+    enum ClassType class_type;
     enum FunType fun_type;
 } Resolver;
 
@@ -53,6 +61,7 @@ static void Resolver_Resolve_BinaryExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_CallExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_GetExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_GroupingExpr(Resolver *resolver, const Expr *expr);
+static void Resolver_Resolve_ThisExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_SetExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_UnaryExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_VarExpr(Resolver *resolver, const Expr *expr);
@@ -165,7 +174,11 @@ static void Resolver_Resolve_BlockStmt(Resolver *resolver, const Stmt *stmt)
 static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
 {
     unsigned i;
+    enum ClassType class_type;
     enum FunType fun_type;
+
+    class_type = resolver->class_type;
+    resolver->class_type = CLASS_TYPE_CLASS;
 
     Resolver_Declare(resolver, stmt->klass.name->lexeme);
     Resolver_Define(resolver, stmt->klass.name->lexeme);
@@ -174,6 +187,8 @@ static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
         fun_type = FUN_TYPE_METHOD;
         Resolver_Resolve_Fun(resolver, stmt->klass.methods[i], fun_type);
     }
+
+    resolver->class_type = class_type;
 }
 
 
@@ -273,6 +288,8 @@ static void Resolver_Resolve_Expr(Resolver *resolver, const Expr *expr)
             return Resolver_Resolve_GroupingExpr(resolver, expr);
         case EXPR_LITERAL:
             break;
+        case EXPR_THIS:
+            return Resolver_Resolve_ThisExpr(resolver, expr);
         case EXPR_SET:
             return Resolver_Resolve_SetExpr(resolver, expr);
         case EXPR_UNARY:
@@ -316,6 +333,16 @@ static void Resolver_Resolve_GetExpr(Resolver *resolver, const Expr *expr)
 static void Resolver_Resolve_GroupingExpr(Resolver *resolver, const Expr *expr)
 {
     Resolver_Resolve_Expr(resolver, expr->grouping);
+}
+
+
+static void Resolver_Resolve_ThisExpr(Resolver *resolver, const Expr *expr)
+{
+    UNUSED(expr);
+    if (resolver->class_type != CLASS_TYPE_CLASS) {
+        resolver->has_error = true;
+        log_error(LOX_SYNTAX_ERR, "cannot use 'this' outside of a class.");
+    }
 }
 
 
