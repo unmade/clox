@@ -410,13 +410,18 @@ static Stmt *print_stmt(struct tokenlist *tlist)
 
 static Stmt *return_stmt(struct tokenlist *tlist)
 {
+    Token *token;
     Expr *expr;
 
-    if ((expr = expression(tlist)) == NULL)
-        return NULL;
+    expr = NULL;
+    if ((token = peek_token(tlist)) != NULL && token->type != TOKEN_SEMICOLON) {
+        if ((expr = expression(tlist)) == NULL)
+            return NULL;
+    }
 
     if (take_token(tlist, TOKEN_SEMICOLON) == NULL) {
-        free_expr(expr);
+        if (expr != NULL)
+            free_expr(expr);
         log_error(LOX_SYNTAX_ERR, "expected ';' at the end of statement");
         return NULL;
     } 
@@ -843,7 +848,8 @@ static Expr *primary(struct tokenlist *tlist)
     if (token->type == TOKEN_IDENTIFIER)
         return new_var_expr(token);
 
-    free_expr(expr);
+    if (expr != NULL)
+        free_expr(expr);
     log_error(LOX_SYNTAX_ERR, "invalid syntax");
     return NULL;
 }

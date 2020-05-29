@@ -68,6 +68,7 @@ static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
 static LoxObj *eval_call(const Expr *expr);
+static unsigned class_arity(LoxObj *self);
 static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *eval_get(const Expr *expr);
@@ -161,6 +162,7 @@ static ExecResult exec_block_stmt(Stmt *stmt)
 
 static ExecResult exec_class_stmt(Stmt *stmt)
 {
+    bool init;
     unsigned i;
     LoxObj *klass, *method;
     Dict *methods;
@@ -169,7 +171,8 @@ static ExecResult exec_class_stmt(Stmt *stmt)
 
     methods = Dict_New(); 
     for (i = 0; i < stmt->klass.n; i++) {
-        method = new_fun_obj(stmt->klass.methods[i], stmt->klass.methods[i]->fun.n);
+        init = (strcmp(stmt->klass.methods[i]->fun.name, "init") == 0);
+        method = new_fun_obj(stmt->klass.methods[i], stmt->klass.methods[i]->fun.n, init);
         if (ENV->next != NULL)
             method->fun.closure = ENV;
         DICT_SET(methods, method->fun.declaration->fun.name, method);
@@ -187,7 +190,7 @@ static ExecResult exec_fun_stmt(Stmt *stmt)
 {
     LoxObj *fun;
 
-    fun = new_fun_obj(stmt, stmt->fun.n);
+    fun = new_fun_obj(stmt, stmt->fun.n, false);
     if (ENV->next != NULL)
         fun->fun.closure = env_copy(ENV);
 
@@ -238,6 +241,9 @@ static ExecResult exec_expr_stmt(Stmt *stmt)
 static ExecResult exec_return_stmt(Stmt *stmt)
 {
     LoxObj *obj;
+
+    if (stmt->expr == NULL)
+        return ExecResult_Return(new_nil_obj());
 
     if ((obj = eval(stmt->expr)) == NULL)
         return ExecResult_Err();
@@ -462,7 +468,7 @@ static LoxObj *eval_call(const Expr *expr)
             break;
         case LOX_OBJ_CLASS:
             f = class_call;
-            arity = 0;
+            arity = class_arity(callee);
             break;
         case LOX_OBJ_FUN:
             f = fun_call;
@@ -483,7 +489,7 @@ static LoxObj *eval_call(const Expr *expr)
     }
 
     if (expr->call.argc != arity) {
-        log_error(LOX_RUNTIME_ERR, "too few or too many arguments");
+        log_error(LOX_RUNTIME_ERR, "expected %u arguments, got %u", arity, expr->call.argc);
         goto cleanup;
     }
 
@@ -501,9 +507,35 @@ cleanup:
 
 static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args)
 {
-    UNUSED(argc);
-    UNUSED(args);
-    return new_instance_obj(self);
+    LoxObj *instance, *prop, *init;
+    LoxEnv *env;
+
+    instance = new_instance_obj(self);
+
+    if ((prop = DICT_GET(LoxObj, self->klass.methods, "init")) != NULL) {
+        init = new_fun_obj(prop->fun.declaration, prop->fun.arity, prop->fun.init);
+        
+        if (prop->fun.closure != NULL)
+            env = enclose_env(prop->fun.closure);
+        else
+            env = enclose_env(ENV);
+        
+        env_def(env, "this", instance);
+        init->fun.closure = env;
+        return fun_call(init, argc, args);
+    }
+
+    return instance;
+}
+
+
+static unsigned class_arity(LoxObj *self)
+{
+    LoxObj *init;
+
+    if ((init = DICT_GET(LoxObj, self->klass.methods, "init")) != NULL)
+        return init->fun.arity;
+    return 0;
 }
 
 
@@ -532,6 +564,9 @@ static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args)
     if (res.code < 0)
         return NULL;
 
+    if (self->fun.init)
+        return env_get(self->fun.closure, "this");
+
     if (res.value != NULL)
         return res.value;
 
@@ -559,7 +594,7 @@ static LoxObj *eval_get(const Expr *expr)
         return prop;
 
     if ((prop = DICT_GET(LoxObj, obj->instance.klass->klass.methods, name)) != NULL) {
-        method = new_fun_obj(prop->fun.declaration, prop->fun.arity);
+        method = new_fun_obj(prop->fun.declaration, prop->fun.arity, prop->fun.init);
 
         if (prop->fun.closure != NULL)
             env = enclose_env(prop->fun.closure);

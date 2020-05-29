@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "dict.h"
 #include "expr.h"
@@ -19,6 +20,7 @@ enum ClassType {
 enum FunType {
     FUN_TYPE_NONE,
     FUN_TYPE_FUN,
+    FUN_TYPE_INIT,
     FUN_TYPE_METHOD,
 };
 
@@ -184,7 +186,10 @@ static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
     Resolver_Define(resolver, stmt->klass.name->lexeme);
 
     for (i = 0; i < stmt->klass.n; i++) {
-        fun_type = FUN_TYPE_METHOD;
+        if (strcmp(stmt->klass.methods[i]->fun.name, "init") == 0)
+            fun_type = FUN_TYPE_INIT;
+        else
+            fun_type = FUN_TYPE_METHOD;
         Resolver_Resolve_Fun(resolver, stmt->klass.methods[i], fun_type);
     }
 
@@ -250,8 +255,13 @@ static void Resolver_Resolve_ReturnStmt(Resolver *resolver, const Stmt *stmt)
         log_error(LOX_SYNTAX_ERR, "cannot return from top-level code");
         return;
     }
-    if (stmt->expr != NULL)
+    if (stmt->expr != NULL) {
+        if (resolver->fun_type == FUN_TYPE_INIT) {
+            resolver->has_error = true;
+            log_error(LOX_SYNTAX_ERR, "cannot return a value from initializer");
+        }
         Resolver_Resolve_Expr(resolver, stmt->expr);
+    }
 }
 
 

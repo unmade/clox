@@ -145,7 +145,8 @@ void free_stmt(Stmt *stmt)
             free_expr(stmt->expr);
             break;
         case STMT_RETURN:
-            free_expr(stmt->expr);
+            if (stmt->expr != NULL)
+                free_expr(stmt->expr);
             break;
         case STMT_VAR:
             free(stmt->var.name);

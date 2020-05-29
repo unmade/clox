@@ -42,13 +42,14 @@ LoxObj *new_class_obj(char *name, Dict *methods)
 }
 
 
-LoxObj *new_fun_obj(Stmt *declaration, unsigned arity)
+LoxObj *new_fun_obj(Stmt *declaration, unsigned arity, bool init)
 {
     LoxObj *obj = (LoxObj *) malloc(sizeof(LoxObj));
 
     obj->type = LOX_OBJ_FUN;
     obj->fun.declaration = declaration;
     obj->fun.arity = arity;
+    obj->fun.init = init;
     obj->fun.closure = NULL;
 
     return obj;
