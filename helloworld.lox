@@ -1,68 +1,68 @@
-//fun fibonacci(n) {
-//    if (n <= 1)
-//        return n;
-//    return fibonacci(n - 2) + fibonacci(n - 1);
-//}
-//
-//
-//fun main() {
-//    var start = clock();
-//
-//    for (var i = 0; i < 20; i = i + 1)
-//        print fibonacci(i);
-//
-//    print clock() - start;
-//}
-//
-//
-//main();
-//
-//
-//fun makeCounter() {
-//  var i = 0;
-//  fun count() {
-//    i = i + 1;
-//    print i;
-//  }
-//
-//  return count;
-//}
-//
-//var counter = makeCounter();
-//counter(); // "1".
-//counter(); // "2".
-//
-//
-//var a = "global";
-//{
-//  fun showA() {
-//    print a;
-//  }
-//
-//  showA();
-//  var a = "block";
-//  showA();
-//}
-//
-//class DevonshireCream {
-//  serveOn() {
-//    return "Scones";
-//  }
-//}
-//
-//print DevonshireCream; // Prints "DevonshireCream".
-//
-//class Bagel {}
-//var bagel = Bagel();
-//print bagel; // Prints "Bagel instance".
-//
-//class Bacon {
-//  eat() {
-//    print "Crunch crunch crunch!";
-//  }
-//}
-//
-//Bacon().eat(); // Prints "Crunch crunch crunch!".
+fun fibonacci(n) {
+    if (n <= 1)
+        return n;
+    return fibonacci(n - 2) + fibonacci(n - 1);
+}
+
+
+fun main() {
+    var start = clock();
+
+    for (var i = 0; i < 20; i = i + 1)
+        print fibonacci(i);
+
+    print clock() - start;
+}
+
+
+main();
+
+
+fun makeCounter() {
+  var i = 0;
+  fun count() {
+    i = i + 1;
+    print i;
+  }
+
+  return count;
+}
+
+var counter = makeCounter();
+counter(); // "1".
+counter(); // "2".
+
+
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
+
+  showA();
+  var a = "block";
+  showA();
+}
+
+class DevonshireCream {
+  serveOn() {
+    return "Scones";
+  }
+}
+
+print DevonshireCream; // Prints "DevonshireCream".
+
+class Bagel {}
+var bagel = Bagel();
+print bagel; // Prints "Bagel instance".
+
+class Bacon {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
+}
+
+Bacon().eat(); // Prints "Crunch crunch crunch!".
 
 
 class Cake {
@@ -80,3 +80,14 @@ var cake = Cake("German chocolate");
 cake.taste(); // Prints "The German chocolate cake is delicious!".
 var honey = cake.init("Honey");
 honey.taste();
+
+
+class Doughnut {
+  cook() {
+    print "Fry until golden brown.";
+  }
+}
+
+class BostonCream < Doughnut {}
+
+BostonCream().cook();

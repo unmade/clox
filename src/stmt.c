@@ -54,12 +54,13 @@ Stmt *new_if_stmt(Expr *cond, Stmt *conseq, Stmt *alt)
 }
 
 
-Stmt *new_klass_stmt(Token *name, size_t n, Stmt **methods)
+Stmt *new_class_stmt(Token *name, Expr *superclass, size_t n, Stmt **methods)
 {
     Stmt *stmt = (Stmt *) malloc(sizeof(Stmt));
 
     stmt->type = STMT_CLASS;
     stmt->klass.name = name;
+    stmt->klass.superclass = superclass;
     stmt->klass.n = n;
     stmt->klass.methods = methods;
 
@@ -124,6 +125,8 @@ void free_stmt(Stmt *stmt)
             free(stmt->block.stmts);
             break;
         case STMT_CLASS:
+            if (stmt->klass.superclass != NULL)
+                free_expr(stmt->klass.superclass);
             for (i = 0; i < stmt->klass.n; i++)
                 free_stmt(stmt->klass.methods[i]);
             free(stmt->klass.methods);

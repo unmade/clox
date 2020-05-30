@@ -78,6 +78,7 @@ static LoxObj *eval_set(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_var(const Expr *expr);
 static char *joinstr(const char *s1, const char *s2);
+static LoxObj *find_method(LoxObj *obj, char *name);
 
 static LoxEnv *ENV = NULL;
 
@@ -164,8 +165,19 @@ static ExecResult exec_class_stmt(Stmt *stmt)
 {
     bool init;
     unsigned i;
-    LoxObj *klass, *method;
+    LoxObj *klass, *method, *superclass;
     Dict *methods;
+
+    superclass = NULL;
+    if (stmt->klass.superclass != NULL) {
+        if ((superclass = eval(stmt->klass.superclass)) == NULL)
+            return ExecResult_Err();
+
+        if (superclass->type != LOX_OBJ_CLASS) {
+            log_error(LOX_RUNTIME_ERR, "superclass must be a class");
+            return ExecResult_Err();
+        }
+    }
 
     env_def(ENV, stmt->klass.name->lexeme, new_nil_obj());
 
@@ -178,7 +190,7 @@ static ExecResult exec_class_stmt(Stmt *stmt)
         DICT_SET(methods, method->fun.declaration->fun.name, method);
     }
 
-    klass = new_class_obj(stmt->klass.name->lexeme, methods);
+    klass = new_class_obj(stmt->klass.name->lexeme, superclass, methods);
 
     env_assign(ENV, stmt->klass.name->lexeme, klass);
 
@@ -507,23 +519,12 @@ cleanup:
 
 static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args)
 {
-    LoxObj *instance, *prop, *init;
-    LoxEnv *env;
+    LoxObj *instance, *init;
 
     instance = new_instance_obj(self);
 
-    if ((prop = DICT_GET(LoxObj, self->klass.methods, "init")) != NULL) {
-        init = new_fun_obj(prop->fun.declaration, prop->fun.arity, prop->fun.init);
-        
-        if (prop->fun.closure != NULL)
-            env = enclose_env(prop->fun.closure);
-        else
-            env = enclose_env(ENV);
-        
-        env_def(env, "this", instance);
-        init->fun.closure = env;
+    if ((init = find_method(instance, "init")) != NULL)
         return fun_call(init, argc, args);
-    }
 
     return instance;
 }
@@ -578,7 +579,6 @@ static LoxObj *eval_get(const Expr *expr)
 {
     char *name;
     LoxObj *obj, *prop, *method;
-    LoxEnv *env;
 
     if ((obj = eval(expr->get.object)) == NULL)
         return NULL;
@@ -593,19 +593,8 @@ static LoxObj *eval_get(const Expr *expr)
     if ((prop = DICT_GET(LoxObj, obj->instance.fields, name)) != NULL)
         return prop;
 
-    if ((prop = DICT_GET(LoxObj, obj->instance.klass->klass.methods, name)) != NULL) {
-        method = new_fun_obj(prop->fun.declaration, prop->fun.arity, prop->fun.init);
-
-        if (prop->fun.closure != NULL)
-            env = enclose_env(prop->fun.closure);
-        else
-            env = enclose_env(ENV);
-        
-        env_def(env, "this", obj);
-        method->fun.closure = env;
-
+    if ((method = find_method(obj, name)) != NULL)
         return method;
-    }
 
     log_error(LOX_RUNTIME_ERR, "undefined property '%s'", name);
     return NULL;
@@ -655,4 +644,32 @@ static char *joinstr(const char *s1, const char *s2)
     strcat(s + len1, s2);
 
     return s;
+}
+
+
+static LoxObj *find_method(LoxObj *obj, char *name)
+{
+    LoxEnv *env;
+    LoxObj *prop, *method, *klass;
+
+    method = NULL;
+    klass = obj->instance.klass;
+    while (method == NULL && klass != NULL) {
+        if ((prop = DICT_GET(LoxObj, klass->klass.methods, name)) == NULL) {
+            klass = klass->klass.superclass;
+            continue;
+        }
+
+        method = new_fun_obj(prop->fun.declaration, prop->fun.arity, prop->fun.init);
+
+        if (prop->fun.closure != NULL)
+            env = enclose_env(prop->fun.closure);
+        else
+            env = enclose_env(ENV);
+        
+        env_def(env, "this", obj);
+        method->fun.closure = env;
+    }
+
+    return method;
 }

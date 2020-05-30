@@ -30,12 +30,13 @@ LoxObj *new_callable_obj(unsigned arity, func_t func)
 }
 
 
-LoxObj *new_class_obj(char *name, Dict *methods)
+LoxObj *new_class_obj(char *name, LoxObj *superclass, Dict *methods)
 {
     LoxObj *obj = (LoxObj *) malloc(sizeof(LoxObj));
 
     obj->type = LOX_OBJ_CLASS;
     obj->klass.name = strdup(name);
+    obj->klass.superclass = superclass;
     obj->klass.methods = methods;
     
     return obj;

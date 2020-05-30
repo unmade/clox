@@ -45,6 +45,7 @@ typedef struct loxobj {
         } instance;
         struct {
             char *name;
+            struct loxobj *superclass;
             Dict *methods;
         } klass;
     };
@@ -53,7 +54,7 @@ typedef struct loxobj {
 
 LoxObj *new_bool_obj(bool val);
 LoxObj *new_callable_obj(unsigned arity, func_t func);
-LoxObj *new_class_obj(char *name, Dict *methods);
+LoxObj *new_class_obj(char *name, LoxObj *superclass, Dict *methods);
 LoxObj *new_fun_obj(Stmt *declaration, unsigned arity, bool init);
 LoxObj *new_instance_obj(LoxObj *klass);
 LoxObj *new_nil_obj();

@@ -185,6 +185,16 @@ static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
     Resolver_Declare(resolver, stmt->klass.name->lexeme);
     Resolver_Define(resolver, stmt->klass.name->lexeme);
 
+    if (stmt->klass.superclass != NULL) {
+        if (strcmp(stmt->klass.superclass->varname->lexeme, stmt->klass.name->lexeme) == 0) {
+            resolver->has_error = true;
+            log_error(LOX_SYNTAX_ERR, "a class cannot inherit from itself");
+            return;
+        }
+
+        Resolver_Resolve_Expr(resolver, stmt->klass.superclass);
+    }
+
     for (i = 0; i < stmt->klass.n; i++) {
         if (strcmp(stmt->klass.methods[i]->fun.name, "init") == 0)
             fun_type = FUN_TYPE_INIT;

@@ -133,11 +133,21 @@ static Stmt *class_declaration(struct tokenlist *tlist)
 {
     size_t i, n;
     Token *name, *token;
+    Expr *superclass;
     Stmt *method, **methods;
 
     if ((name = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
         log_error(LOX_SYNTAX_ERR, "expected class name");
         return NULL;
+    }
+
+    superclass = NULL;
+    if (take_token(tlist, TOKEN_LESS) != NULL) {
+        if ((token = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
+            log_error(LOX_SYNTAX_ERR, "expected superclass name");
+            return NULL;
+        }
+        superclass = new_var_expr(token);
     }
 
     if (take_token(tlist, TOKEN_LEFT_BRACE) == NULL) {
@@ -162,9 +172,11 @@ static Stmt *class_declaration(struct tokenlist *tlist)
         goto cleanup;
     }
 
-    return new_klass_stmt(name, i, methods);
+    return new_class_stmt(name, superclass, i, methods);
 
 cleanup:
+    if (superclass != NULL)
+        free_expr(superclass);
     n = i;
     for (i = 0; i < n; i++)
         free_stmt(methods[i]);
