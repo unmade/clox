@@ -126,6 +126,18 @@ Expr *new_set_expr(Token *name, Expr *object, Expr *value)
 }
 
 
+Expr *new_super_expr(Token *keyword, Token *method)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_SUPER;
+    expr->super.keyword = keyword;
+    expr->super.method = method;
+
+    return expr;
+}
+
+
 Expr *new_var_expr(Token *name)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
@@ -166,6 +178,8 @@ void free_expr(Expr *expr)
         case EXPR_SET:
             free_expr(expr->set.object);
             free_expr(expr->set.value);
+            break;
+        case EXPR_SUPER:
             break;
         case EXPR_UNARY:
             free_expr(expr->unary.right);

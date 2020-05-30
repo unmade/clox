@@ -827,7 +827,7 @@ cleanup:
 static Expr *primary(struct tokenlist *tlist)
 {
     Expr *expr;
-    Token *token;
+    Token *token, *method;
 
     expr = NULL;
 
@@ -838,12 +838,11 @@ static Expr *primary(struct tokenlist *tlist)
 
     if (token->type == TOKEN_LEFT_PAREN) {
         if ((expr = expression(tlist)) == NULL)
-            return NULL;
+            goto cleanup;
 
         if (take_token(tlist, TOKEN_RIGHT_PAREN) == NULL) {
-            free_expr(expr);
             log_error(LOX_SYNTAX_ERR, "expected ')' after expression");
-            return NULL;
+            goto cleanup;
         }
 
         return expr;
@@ -857,11 +856,26 @@ static Expr *primary(struct tokenlist *tlist)
     if (token->type == TOKEN_THIS)
         return new_this_expr(token);
 
+    if (token->type == TOKEN_SUPER) {
+        if (take_token(tlist, TOKEN_DOT) == NULL) {
+            log_error(LOX_SYNTAX_ERR, "expected '.' after 'super'");
+            goto cleanup;
+        }
+        if ((method = take_token(tlist, TOKEN_IDENTIFIER)) == NULL) {
+            log_error(LOX_SYNTAX_ERR, "expect superclass method name");
+            goto cleanup;
+        }
+        return new_super_expr(token, method);
+    }
+
     if (token->type == TOKEN_IDENTIFIER)
         return new_var_expr(token);
 
+    log_error(LOX_SYNTAX_ERR, "invalid syntax");
+    goto cleanup;
+
+cleanup:
     if (expr != NULL)
         free_expr(expr);
-    log_error(LOX_SYNTAX_ERR, "invalid syntax");
     return NULL;
 }

@@ -11,6 +11,7 @@ enum ExprType {
     EXPR_GROUPING,
     EXPR_LITERAL,
     EXPR_SET,
+    EXPR_SUPER,
     EXPR_THIS,
     EXPR_UNARY,
     EXPR_VAR,
@@ -28,6 +29,7 @@ typedef struct expr {
         Token *literal;
         Token *keyword;
         struct { Token *name; struct expr *object; struct expr *value; } set;
+        struct { Token *keyword; Token *method; } super;
         struct { Token *op; struct expr *right; } unary;
         Token *varname;
     };
@@ -41,6 +43,7 @@ Expr *new_get_expr(Token *name, Expr *object);
 Expr *new_grouping_expr(Expr *expr);
 Expr *new_literal_expr(Token *literal);
 Expr *new_set_expr(Token *name, Expr *object, Expr *value);
+Expr *new_super_expr(Token *keyword, Token *method);
 Expr *new_this_expr(Token *keyword);
 Expr *new_unary_expr(Token *op, Expr *right);
 Expr *new_var_expr(Token *name);

@@ -75,10 +75,11 @@ static LoxObj *eval_get(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
 static LoxObj *eval_this(const Expr *expr);
 static LoxObj *eval_set(const Expr *expr);
+static LoxObj *eval_super(const Expr *expr);
 static LoxObj *eval_unary(const Expr *expr);
 static LoxObj *eval_var(const Expr *expr);
 static char *joinstr(const char *s1, const char *s2);
-static LoxObj *find_method(LoxObj *obj, char *name);
+static LoxObj *find_method(LoxObj *obj, LoxObj *klass, char *name);
 
 static LoxEnv *ENV = NULL;
 
@@ -181,16 +182,24 @@ static ExecResult exec_class_stmt(Stmt *stmt)
 
     env_def(ENV, stmt->klass.name->lexeme, new_nil_obj());
 
+    if (superclass != NULL) {
+        ENV = enclose_env(ENV);
+        env_def(ENV, "super", superclass);
+    }
+
     methods = Dict_New(); 
     for (i = 0; i < stmt->klass.n; i++) {
         init = (strcmp(stmt->klass.methods[i]->fun.name, "init") == 0);
         method = new_fun_obj(stmt->klass.methods[i], stmt->klass.methods[i]->fun.n, init);
         if (ENV->next != NULL)
-            method->fun.closure = ENV;
+            method->fun.closure = env_copy(ENV);
         DICT_SET(methods, method->fun.declaration->fun.name, method);
     }
 
     klass = new_class_obj(stmt->klass.name->lexeme, superclass, methods);
+
+    if (superclass != NULL)
+        ENV = disclose_env(ENV);
 
     env_assign(ENV, stmt->klass.name->lexeme, klass);
 
@@ -322,6 +331,8 @@ static LoxObj *eval(const Expr *expr)
             return eval_this(expr);
         case EXPR_SET:
             return eval_set(expr);
+        case EXPR_SUPER:
+            return eval_super(expr);
         case EXPR_UNARY:
             return eval_unary(expr);
         case EXPR_VAR:
@@ -374,6 +385,24 @@ static LoxObj *eval_set(const Expr *expr)
     DICT_SET(obj->instance.fields, expr->set.name->lexeme, value);
 
     return value;
+}
+
+
+static LoxObj *eval_super(const Expr *expr)
+{
+    LoxObj *instance, *superclass, *method;
+
+    instance = env_get(ENV, "this");
+    superclass = env_get(ENV, "super");
+
+    method = find_method(instance, superclass, expr->super.method->lexeme);
+
+    if (method == NULL) {
+        log_error(LOX_RUNTIME_ERR, "undefined property '%s'", expr->super.method->lexeme);
+        return NULL;
+    }
+
+    return method;
 }
 
 
@@ -523,7 +552,7 @@ static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args)
 
     instance = new_instance_obj(self);
 
-    if ((init = find_method(instance, "init")) != NULL)
+    if ((init = find_method(instance, instance->instance.klass, "init")) != NULL)
         return fun_call(init, argc, args);
 
     return instance;
@@ -593,7 +622,7 @@ static LoxObj *eval_get(const Expr *expr)
     if ((prop = DICT_GET(LoxObj, obj->instance.fields, name)) != NULL)
         return prop;
 
-    if ((method = find_method(obj, name)) != NULL)
+    if ((method = find_method(obj, obj->instance.klass, name)) != NULL)
         return method;
 
     log_error(LOX_RUNTIME_ERR, "undefined property '%s'", name);
@@ -647,19 +676,13 @@ static char *joinstr(const char *s1, const char *s2)
 }
 
 
-static LoxObj *find_method(LoxObj *obj, char *name)
+static LoxObj *find_method(LoxObj *obj, LoxObj *klass, char *name)
 {
     LoxEnv *env;
-    LoxObj *prop, *method, *klass;
+    LoxObj *prop, *method;
 
     method = NULL;
-    klass = obj->instance.klass;
-    while (method == NULL && klass != NULL) {
-        if ((prop = DICT_GET(LoxObj, klass->klass.methods, name)) == NULL) {
-            klass = klass->klass.superclass;
-            continue;
-        }
-
+    if ((prop = DICT_GET(LoxObj, klass->klass.methods, name)) != NULL) {
         method = new_fun_obj(prop->fun.declaration, prop->fun.arity, prop->fun.init);
 
         if (prop->fun.closure != NULL)
@@ -670,6 +693,9 @@ static LoxObj *find_method(LoxObj *obj, char *name)
         env_def(env, "this", obj);
         method->fun.closure = env;
     }
+
+    if (method == NULL && klass->klass.superclass != NULL)
+        return find_method(obj, klass->klass.superclass, name);
 
     return method;
 }

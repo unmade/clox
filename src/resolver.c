@@ -15,6 +15,7 @@ bool TRUE = true;
 enum ClassType {
     CLASS_TYPE_NONE,
     CLASS_TYPE_CLASS,
+    CLASS_TYPE_SUBCLASS,
 };
 
 enum FunType {
@@ -65,6 +66,7 @@ static void Resolver_Resolve_GetExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_GroupingExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_ThisExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_SetExpr(Resolver *resolver, const Expr *expr);
+static void Resolver_Resolve_SuperExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_UnaryExpr(Resolver *resolver, const Expr *expr);
 static void Resolver_Resolve_VarExpr(Resolver *resolver, const Expr *expr);
 
@@ -191,7 +193,7 @@ static void Resolver_Resolve_ClassStmt(Resolver *resolver, const Stmt *stmt)
             log_error(LOX_SYNTAX_ERR, "a class cannot inherit from itself");
             return;
         }
-
+        resolver->class_type = CLASS_TYPE_SUBCLASS;
         Resolver_Resolve_Expr(resolver, stmt->klass.superclass);
     }
 
@@ -312,6 +314,8 @@ static void Resolver_Resolve_Expr(Resolver *resolver, const Expr *expr)
             return Resolver_Resolve_ThisExpr(resolver, expr);
         case EXPR_SET:
             return Resolver_Resolve_SetExpr(resolver, expr);
+        case EXPR_SUPER:
+            return Resolver_Resolve_SuperExpr(resolver, expr);
         case EXPR_UNARY:
             return Resolver_Resolve_UnaryExpr(resolver, expr);
         case EXPR_VAR:
@@ -370,6 +374,23 @@ static void Resolver_Resolve_SetExpr(Resolver *resolver, const Expr *expr)
 {
     Resolver_Resolve_Expr(resolver, expr->set.value);
     Resolver_Resolve_Expr(resolver, expr->set.object);
+}
+
+
+static void Resolver_Resolve_SuperExpr(Resolver *resolver, const Expr *expr)
+{
+    UNUSED(expr);
+
+    if (resolver->class_type == CLASS_TYPE_NONE) {
+        resolver->has_error = true;
+        log_error(LOX_SYNTAX_ERR, "cannot use 'super' outside of a class");
+        return;
+    }
+    if (resolver->class_type == CLASS_TYPE_CLASS) {
+        resolver->has_error = true;
+        log_error(LOX_SYNTAX_ERR, "cannot use 'super' in a class with no superclass");
+        return;
+    }
 }
 
 
