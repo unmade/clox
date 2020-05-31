@@ -156,12 +156,19 @@ char *str_obj(const LoxObj *obj)
     switch (obj->type) {
         case LOX_OBJ_BOOL:
             return strdup((obj->bval) ? "true" : "false");
+        case LOX_OBJ_CALLABLE:
+            return strdup("<native>");
         case LOX_OBJ_CLASS:
             return strdup(obj->klass.name);
+        case LOX_OBJ_FUN:
+            n = strlen("<fn >") + strlen(obj->fun.declaration->fun.name);
+            s = (char *) calloc(n + 1, sizeof(char));
+            sprintf(s, "<fn %s>", obj->fun.declaration->fun.name);
+            return s;
         case LOX_OBJ_INSTANCE:
             n = strlen(obj->instance.klass->klass.name) + strlen("instance");
             s = (char *) calloc(n + 1, sizeof(char));
-            sprintf(s, "%s %s", obj->instance.klass->klass.name, "instance");
+            sprintf(s, "instance %s", obj->instance.klass->klass.name);
             return s;
         case LOX_OBJ_NUMBER:
             n = snprintf(NULL, 0, "%f", obj->fval);
