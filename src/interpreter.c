@@ -615,6 +615,8 @@ static unsigned class_arity(LoxObj *self)
 
     if ((init = DICT_GET(LoxObj, self->klass.methods, "init")) != NULL)
         return init->fun.arity;
+    if (self->klass.superclass != NULL)
+        return class_arity(self->klass.superclass);
     return 0;
 }
 
