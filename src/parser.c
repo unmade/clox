@@ -215,7 +215,7 @@ static Stmt *fun_declaration(struct tokenlist *tlist)
     if (token != NULL && token->type != TOKEN_RIGHT_PAREN) {
 
         // estimate how much space to allocate for parameters
-        start = get_token(tlist);
+        start = peek_token(tlist);
         do {
             token = get_token(tlist);
             if (token != NULL && token->type == TOKEN_IDENTIFIER)
