@@ -194,17 +194,25 @@ static ExecResult exec_class_stmt(Stmt *stmt)
     for (i = 0; i < stmt->klass.n; i++) {
         init = (strcmp(stmt->klass.methods[i]->fun.name, "init") == 0);
         method = new_fun_obj(stmt->klass.methods[i], stmt->klass.methods[i]->fun.n, init);
-        if (ENV->next != NULL)
-            method->fun.closure = env_copy(ENV);
         DICT_SET(methods, method->fun.declaration->fun.name, method);
     }
 
     klass = new_class_obj(stmt->klass.name->lexeme, superclass, methods);
 
     if (superclass != NULL)
-        ENV = disclose_env(ENV);
+        env_assign(ENV->next, stmt->klass.name->lexeme, klass);
+    else
+        env_assign(ENV, stmt->klass.name->lexeme, klass);
 
-    env_assign(ENV, stmt->klass.name->lexeme, klass);
+    if (ENV->next != NULL) {
+        for (i = 0; i< stmt->klass.n; i++) {
+            method = DICT_GET(LoxObj, klass->klass.methods, stmt->klass.methods[i]->fun.name);
+            method->fun.closure = env_copy(ENV); 
+        }
+    }
+
+    if (superclass != NULL)
+        ENV = disclose_env(ENV);
 
     return ExecResult_Ok();
 }
@@ -489,6 +497,12 @@ static LoxObj *eval_binary(const Expr *expr)
                 obj = new_str_obj(joinstr(left->sval, right->sval));
             else
                 log_error(LOX_RUNTIME_ERR, "operands must be two numbers or two strings");
+            break;
+        case TOKEN_BANG_EQUAL:
+            obj = new_bool_obj(!is_obj_equal(left, right));
+            break;
+        case TOKEN_EQUAL_EQUAL:
+            obj = new_bool_obj(is_obj_equal(left, right));
             break;
         case TOKEN_LESS:
             if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
