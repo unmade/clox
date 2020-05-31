@@ -28,6 +28,8 @@ static Stmt *while_stmt(struct tokenlist *tlist);
 static Stmt *expr_stmt(struct tokenlist *tlist);
 static Expr *expression(struct tokenlist *tlist);
 static Expr *assignment(struct tokenlist *tlist);
+static Expr *logic_or(struct tokenlist *tlist);
+static Expr *logic_and(struct tokenlist *tlist);
 static Expr *equality(struct tokenlist *tlist);
 static Expr *comparison(struct tokenlist *tlist);
 static Expr *addition(struct tokenlist *tlist);
@@ -586,7 +588,7 @@ static Expr *assignment(struct tokenlist *tlist)
     
     expr = rexpr = NULL;
 
-    if ((expr = equality(tlist)) == NULL)
+    if ((expr = logic_or(tlist)) == NULL)
         return NULL;
 
     if ((take_token(tlist, TOKEN_EQUAL)) != NULL) {
@@ -601,6 +603,58 @@ static Expr *assignment(struct tokenlist *tlist)
 
         log_error(LOX_SYNTAX_ERR, "invalid assignment target");
         goto cleanup;
+    }
+
+    return expr;
+
+cleanup:
+    if (expr != NULL) free_expr(expr);
+    if (rexpr != NULL) free_expr(rexpr);
+
+    return NULL;
+}
+
+
+static Expr *logic_or(struct tokenlist *tlist)
+{
+    Token *token;
+    Expr *expr, *rexpr;
+    
+    expr = rexpr = NULL;
+
+    if ((expr = logic_and(tlist)) == NULL)
+        return NULL;
+
+    while ((token = take_token(tlist, TOKEN_OR)) != NULL) {
+        if ((rexpr = logic_and(tlist)) == NULL)
+            goto cleanup;
+        expr = new_logic_expr(expr, token, rexpr);
+    }
+
+    return expr;
+
+cleanup:
+    if (expr != NULL) free_expr(expr);
+    if (rexpr != NULL) free_expr(rexpr);
+
+    return NULL;
+}
+
+
+static Expr *logic_and(struct tokenlist *tlist)
+{
+    Token *token;
+    Expr *expr, *rexpr;
+ 
+    expr = rexpr = NULL;
+
+    if ((expr = equality(tlist)) == NULL)
+        return NULL;
+
+    while ((token = take_token(tlist, TOKEN_AND)) != NULL) {
+        if ((rexpr = equality(tlist)) == NULL)
+            goto cleanup;
+        expr = new_logic_expr(expr, token, rexpr);
     }
 
     return expr;

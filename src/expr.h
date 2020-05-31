@@ -10,6 +10,7 @@ enum ExprType {
     EXPR_GET,
     EXPR_GROUPING,
     EXPR_LITERAL,
+    EXPR_LOGIC,
     EXPR_SET,
     EXPR_SUPER,
     EXPR_THIS,
@@ -42,6 +43,7 @@ Expr *new_call_expr(Expr *callee, Token *paren, size_t argc, Expr **args);
 Expr *new_get_expr(Token *name, Expr *object);
 Expr *new_grouping_expr(Expr *expr);
 Expr *new_literal_expr(Token *literal);
+Expr *new_logic_expr(Expr *left, Token *op, Expr *right);
 Expr *new_set_expr(Token *name, Expr *object, Expr *value);
 Expr *new_super_expr(Token *keyword, Token *method);
 Expr *new_this_expr(Token *keyword);

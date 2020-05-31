@@ -54,6 +54,7 @@ static ExecResult ExecResult_Err()
 
 
 static LoxEnv *init_env();
+
 static ExecResult exec(Stmt *stmt);
 static ExecResult exec_block_stmt(Stmt *stmt);
 static ExecResult exec_class_stmt(Stmt *stmt);
@@ -64,6 +65,7 @@ static ExecResult exec_print_stmt(Stmt *stmt);
 static ExecResult exec_return_stmt(Stmt *stmt);
 static ExecResult exec_var_stmt(Stmt *stmt);
 static ExecResult exec_while_stmt(Stmt *stmt);
+
 static LoxObj *eval(const Expr *expr);
 static LoxObj *eval_assignment(const Expr *expr);
 static LoxObj *eval_binary(const Expr *expr);
@@ -73,6 +75,7 @@ static LoxObj *class_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *fun_call(LoxObj *self, unsigned argc, LoxObj **args);
 static LoxObj *eval_get(const Expr *expr);
 static LoxObj *eval_literal(const Expr *expr);
+static LoxObj *eval_logic(const Expr *expr);
 static LoxObj *eval_this(const Expr *expr);
 static LoxObj *eval_set(const Expr *expr);
 static LoxObj *eval_super(const Expr *expr);
@@ -327,6 +330,8 @@ static LoxObj *eval(const Expr *expr)
             return eval(expr->grouping);
         case EXPR_LITERAL:
             return eval_literal(expr);
+        case EXPR_LOGIC:
+            return eval_logic(expr);
         case EXPR_THIS:
             return eval_this(expr);
         case EXPR_SET:
@@ -353,6 +358,25 @@ static LoxObj *eval_assignment(const Expr *expr)
     }
 
     return NULL;
+}
+
+
+static LoxObj *eval_logic(const Expr *expr)
+{
+    LoxObj *left;
+
+    if ((left = eval(expr->binary.left)) == NULL)
+        return NULL;
+
+    if (expr->binary.op->type == TOKEN_OR) {
+        if (is_obj_truthy(left))
+            return left;
+    } else {
+        if (!is_obj_truthy(left))
+            return left;
+    }
+
+    return eval(expr->binary.right);
 }
 
 
@@ -475,6 +499,18 @@ static LoxObj *eval_binary(const Expr *expr)
         case TOKEN_LESS_EQUAL:
             if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
                 obj = new_bool_obj(left->fval <= right->fval); 
+            else
+                log_error(LOX_RUNTIME_ERR, "operands must be numbers");
+            break;
+        case TOKEN_GREATER:
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_bool_obj(left->fval > right->fval);
+            else
+                log_error(LOX_RUNTIME_ERR, "operands must be numbers");
+            break;
+        case TOKEN_GREATER_EQUAL:
+            if (left->type == LOX_OBJ_NUMBER && right->type == LOX_OBJ_NUMBER)
+                obj = new_bool_obj(left->fval >= right->fval);
             else
                 log_error(LOX_RUNTIME_ERR, "operands must be numbers");
             break;

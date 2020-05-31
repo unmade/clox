@@ -301,6 +301,7 @@ static void Resolver_Resolve_Expr(Resolver *resolver, const Expr *expr)
         case EXPR_ASSIGN:
             return Resolver_Resolve_AssignExpr(resolver, expr);
         case EXPR_BINARY:
+        case EXPR_LOGIC:
             return Resolver_Resolve_BinaryExpr(resolver, expr);
         case EXPR_CALL:
             return Resolver_Resolve_CallExpr(resolver, expr);

@@ -112,3 +112,7 @@ class B < A {
 class C < B {}
 
 C().test();
+
+
+print "hi" or 2; // "hi".
+print nil or "yes"; // "yes".

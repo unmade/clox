@@ -90,6 +90,19 @@ Expr *new_literal_expr(Token *literal)
 }
 
 
+Expr *new_logic_expr(Expr *left, Token *op, Expr *right)
+{
+    Expr *expr = (Expr *) malloc(sizeof(Expr));
+
+    expr->type = EXPR_LOGIC;
+    expr->binary.left = left;
+    expr->binary.op = op;
+    expr->binary.right = right;
+
+    return expr;
+}
+
+
 Expr *new_this_expr(Token *keyword)
 {
     Expr *expr = (Expr *) malloc(sizeof(Expr));
@@ -158,6 +171,7 @@ void free_expr(Expr *expr)
             free_expr(expr->assign.value);
             break;
         case EXPR_BINARY:
+        case EXPR_LOGIC:
             free_expr(expr->binary.left);
             free_expr(expr->binary.right);
             break;
