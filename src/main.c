@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
         source = fopen(argv[1], "rb");
         if (source == NULL) {
             fprintf(stderr, "Could not open file \"%s\".\n", argv[1]);
+            exit(1);
         }
     } else if (argc == 1) {
         source = stdin;

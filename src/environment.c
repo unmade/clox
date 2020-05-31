@@ -25,7 +25,11 @@ LoxEnv *env_copy(LoxEnv *env)
     if (env->next != NULL)
         copy->next = env_copy(env->next);
 
-    copy->storage = Dict_Copy(env->storage);
+    // don't copy global ENV;
+    if (env->next == NULL)
+        copy->storage = env->storage;
+    else
+        copy->storage = Dict_Copy(env->storage);
 
     return copy;
 }
