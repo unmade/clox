@@ -128,6 +128,26 @@ bool is_obj_truthy(const LoxObj *obj)
 }
 
 
+bool is_obj_equal(const LoxObj *a, const LoxObj *b)
+{
+    if (a->type == LOX_OBJ_NIL && b->type == LOX_OBJ_NIL)
+        return true;
+    if (a->type == LOX_OBJ_NIL)
+        return false;
+    if (a->type != b->type)
+        return false;
+    
+    if (a->type == LOX_OBJ_BOOL)
+        return a->bval == b->bval;
+    if (a->type == LOX_OBJ_NUMBER)
+        return a->fval == b->fval;
+    if (a->type == LOX_OBJ_STRING)
+        return strcmp(a->sval, b->sval) == 0;
+
+    return false;
+}
+
+
 char *str_obj(const LoxObj *obj)
 {
     char *s;

@@ -64,6 +64,7 @@ LoxObj *new_str_obj(char *s);
 void free_obj(LoxObj *obj);
 
 bool is_obj_truthy(const LoxObj *obj);
+bool is_obj_equal(const LoxObj *left, const LoxObj *right);
 
 char *str_obj(const LoxObj *obj);
 void print_obj(const LoxObj *obj);
