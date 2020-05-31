@@ -365,7 +365,7 @@ static void Resolver_Resolve_GroupingExpr(Resolver *resolver, const Expr *expr)
 static void Resolver_Resolve_ThisExpr(Resolver *resolver, const Expr *expr)
 {
     UNUSED(expr);
-    if (resolver->class_type != CLASS_TYPE_CLASS) {
+    if (resolver->class_type == CLASS_TYPE_NONE) {
         resolver->has_error = true;
         log_error(LOX_SYNTAX_ERR, "cannot use 'this' outside of a class.");
     }
