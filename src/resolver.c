@@ -290,7 +290,8 @@ static void Resolver_Resolve_VarStmt(Resolver *resolver, const Stmt *stmt)
 
 static void Resolver_Resolve_WhileStmt(Resolver *resolver, const Stmt *stmt)
 {
-    Resolver_Resolve_Expr(resolver, stmt->whileloop.cond);
+    if (stmt->whileloop.cond != NULL)
+        Resolver_Resolve_Expr(resolver, stmt->whileloop.cond);
     Resolver_Resolve_Stmt(resolver, stmt->whileloop.body);
 }
 

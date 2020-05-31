@@ -325,6 +325,7 @@ static Stmt *statement(struct tokenlist *tlist)
 
 static Stmt *for_stmt(struct tokenlist *tlist)
 {
+    Token *token;
     Expr *cond, *inc;
     Stmt *init, *body, **stmts;
 
@@ -350,7 +351,7 @@ static Stmt *for_stmt(struct tokenlist *tlist)
 
     /* loop condition */
 
-    if (take_token(tlist, TOKEN_SEMICOLON) == NULL)
+    if ((token = peek_token(tlist)) != NULL && token->type != TOKEN_SEMICOLON)
         if ((cond = expression(tlist)) == NULL)
             goto cleanup;
     
@@ -361,7 +362,7 @@ static Stmt *for_stmt(struct tokenlist *tlist)
 
     /* loop increment */
 
-    if (take_token(tlist, TOKEN_RIGHT_PAREN) == NULL)
+    if ((token = peek_token(tlist)) != NULL && token->type != TOKEN_RIGHT_PAREN)
         if ((inc = expression(tlist)) == NULL)
             goto cleanup;
 
@@ -369,7 +370,7 @@ static Stmt *for_stmt(struct tokenlist *tlist)
         log_error(LOX_SYNTAX_ERR, "expected ')' after for clauses");
         goto cleanup;
     }
-
+    
     /* loop body */
 
     if ((body = statement(tlist)) == NULL)

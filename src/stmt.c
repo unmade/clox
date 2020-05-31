@@ -157,7 +157,8 @@ void free_stmt(Stmt *stmt)
                 free_expr(stmt->var.expr);
             break;
         case STMT_WHILE:
-            free_expr(stmt->whileloop.cond);
+            if (stmt->whileloop.cond != NULL)
+                free_expr(stmt->whileloop.cond);
             free_stmt(stmt->whileloop.body);
             break;
         default:
