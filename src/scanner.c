@@ -58,7 +58,7 @@ Token *scan(FILE *input)
 
         if (c == '/') {
             if ((next_c = getc(input)) == '/') {
-                while (getc(input) != '\n')
+                while ((c = getc(input)) != '\n' && c != EOF)
                     ;
                 continue;
             } else {
