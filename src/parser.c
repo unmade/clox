@@ -459,8 +459,10 @@ static Stmt *block_stmt(struct tokenlist *tlist)
     stmts = (Stmt **) calloc(n, sizeof(Stmt *));
 
     while (!has_error && (t = peek_token(tlist)) != NULL && t->type != TOKEN_RIGHT_BRACE) {
-        if ((stmt = declaration(tlist)) == NULL)
+        if ((stmt = declaration(tlist)) == NULL) {
             has_error = true;
+            break;
+        }
         if (i >= n)
             stmts = (Stmt **) realloc(stmts, sizeof(Stmt *) * (n *= 2));
         stmts[i++] = stmt;
