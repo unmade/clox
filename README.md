@@ -7,12 +7,7 @@ Yet another implementation of the Lox language in C.
 
 ## Overview
 
-This is a tree-walk interpreter for the Lox language. It has all languages
-features and passes all checks, except:
+This is a bytecode virtual machine for the Lox language.
 
-- [for: closure in body](https://github.com/munificent/craftinginterpreters/blob/master/test/for/closure_in_body.lox)
-- [function: local mutual recursion](https://github.com/munificent/craftinginterpreters/blob/master/test/function/local_mutual_recursion.lox)
-- [collide_with_parameter.lox](https://github.com/munificent/craftinginterpreters/blob/master/test/variable/collide_with_parameter.lox)
+You can find tree-walk interpreter written in C [here](https://github.com/unmade/clox/tree/treewalk).
 
-For now there is no Garbage Collector for objects, so some programs can consume
-a lot of memory 
