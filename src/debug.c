@@ -26,6 +26,12 @@ int Chunk_DisassembleInstruction(Chunk *chunk, int offset)
 
     printf("%04d ", offset);
 
+    if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
+        printf("   | ");
+    } else {
+        printf("%4d ", chunk->lines[offset]);
+    }
+
     switch (instruction = chunk->code[offset]) {
         case OP_CONSTANT:
             return constant_instruction("OP_CONSTANT", chunk, offset);
@@ -50,7 +56,7 @@ static int constant_instruction(char *name, Chunk *chunk, int offset)
     uint8_t constant_idx;
 
     constant_idx = chunk->code[offset + 1];
-    printf("%-16s: %4d'", name, constant_idx);
+    printf("%-16s: %4d '", name, constant_idx);
     Value_Print(chunk->constants.values[constant_idx]);
     printf("'\n");
 
