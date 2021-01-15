@@ -16,6 +16,20 @@ int main (int argc, char *argv[])
     Chunk_Write(&chunk, OP_CONSTANT, 123);
     Chunk_Write(&chunk, constant_idx, 123);
 
+    constant_idx = Chunk_AddConstant(&chunk, 3.4);
+    Chunk_Write(&chunk, OP_CONSTANT, 123);
+    Chunk_Write(&chunk, constant_idx, 123);
+
+    Chunk_Write(&chunk, OP_ADD, 123);
+
+    constant_idx = Chunk_AddConstant(&chunk, 5.6);
+    Chunk_Write(&chunk, OP_CONSTANT, 123);
+    Chunk_Write(&chunk, constant_idx, 123);
+
+    Chunk_Write(&chunk, OP_DIVIDE, 123);
+
+    Chunk_Write(&chunk, OP_NEGATE, 123);
+
     Chunk_Write(&chunk, OP_RETURN, 123);
     Chunk_Disassemble(&chunk, "test chunk");
     VM_Interpret(&chunk);
