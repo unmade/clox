@@ -1,39 +1,43 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "debug.h"
 #include "common.h"
 #include "chunk.h"
 #include "vm.h"
 
 
+static void repl()
+{
+    char line[1024];
+
+    for (;;) {
+        printf("> ");
+
+        if (!fgets(line, sizeof(line), stdin)) {
+            printf("\n");
+            break;
+        }
+
+        VM_Interpret(line);
+    }
+}
+
+
 int main (int argc, char *argv[])
 {
     VM_Init();
 
-    Chunk chunk;
-
-    Chunk_Init(&chunk);
-
-    int constant_idx = Chunk_AddConstant(&chunk, 1.2);
-    Chunk_Write(&chunk, OP_CONSTANT, 123);
-    Chunk_Write(&chunk, constant_idx, 123);
-
-    constant_idx = Chunk_AddConstant(&chunk, 3.4);
-    Chunk_Write(&chunk, OP_CONSTANT, 123);
-    Chunk_Write(&chunk, constant_idx, 123);
-
-    Chunk_Write(&chunk, OP_ADD, 123);
-
-    constant_idx = Chunk_AddConstant(&chunk, 5.6);
-    Chunk_Write(&chunk, OP_CONSTANT, 123);
-    Chunk_Write(&chunk, constant_idx, 123);
-
-    Chunk_Write(&chunk, OP_DIVIDE, 123);
-
-    Chunk_Write(&chunk, OP_NEGATE, 123);
-
-    Chunk_Write(&chunk, OP_RETURN, 123);
-    Chunk_Disassemble(&chunk, "test chunk");
-    VM_Interpret(&chunk);
-    Chunk_Free(&chunk);
+    if (argc == 1) {
+        repl();
+    } else if (argc == 2) {
+        fprintf(stderr, "Scripts are not supported yet");
+        exit(64);
+    } else {
+        fprintf(stderr, "Usage: clox\n");
+        exit(64);
+    }
 
     VM_Free();
 

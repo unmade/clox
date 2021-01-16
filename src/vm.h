@@ -26,6 +26,6 @@ void VM_Init();
 void VM_Free();
 void VM_Push(Value value);
 Value VM_Pop();
-InterpretResult VM_Interpret(Chunk *chunk);
+InterpretResult VM_Interpret(const char *source);
 
 #endif
