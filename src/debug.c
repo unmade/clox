@@ -27,10 +27,10 @@ int Chunk_DisassembleInstruction(Chunk *chunk, int offset)
 
     printf("%04d ", offset);
 
-    if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
+    if (offset > 0 && Chunk_GetLine(chunk, offset) == Chunk_GetLine(chunk, offset - 1)) {
         printf("   | ");
     } else {
-        printf("%4d ", chunk->lines[offset]);
+        printf("%4d ", Chunk_GetLine(chunk, offset));
     }
 
     switch (instruction = chunk->code[offset]) {

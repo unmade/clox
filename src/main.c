@@ -47,11 +47,11 @@ int main (int argc, char *argv[])
     Chunk chunk;
     Chunk_Init(&chunk);
 
-    for (int i = 0; i < 256; i++) {
-        Chunk_WriteConstant(&chunk, i, 123);
+    for (int i = 0; i < 4; i++) {
+        Chunk_WriteConstant(&chunk, i, 1);
     }
 
-    Chunk_Write(&chunk, OP_RETURN, 123);
+    Chunk_Write(&chunk, OP_RETURN, 2);
 
     run(&chunk);
 
