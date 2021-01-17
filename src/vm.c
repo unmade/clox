@@ -95,8 +95,7 @@ InterpretResult run(Chunk *chunk)
 #define BINARY_OP(op) \
     do { \
         Value b = VM_Pop(); \
-        Value a = VM_Pop(); \
-        VM_Push(a op b); \
+        *(vm.stack_top - 1) = (*(vm.stack_top - 1) op b); \
     } while (false)
 
     vm.chunk = chunk;
@@ -143,7 +142,7 @@ InterpretResult run(Chunk *chunk)
                 break;
             }
             case OP_NEGATE: {
-                VM_Push(-VM_Pop());
+                 *(vm.stack_top - 1) *= -1;
                 break;
             }
             case OP_RETURN: {
