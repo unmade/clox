@@ -92,11 +92,6 @@ InterpretResult run(Chunk *chunk)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() \
     (vm.chunk->constants.values[READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)])
-#define BINARY_OP(op) \
-    do { \
-        Value b = VM_Pop(); \
-        *(vm.stack_top - 1) = (*(vm.stack_top - 1) op b); \
-    } while (false)
 
     vm.chunk = chunk;
     vm.ip = vm.chunk->code;
@@ -126,19 +121,19 @@ InterpretResult run(Chunk *chunk)
                 break;
             }
             case OP_ADD: {
-                BINARY_OP(+);
+                *(vm.stack_top - 1) += VM_Pop();
                 break;
             }
             case OP_SUBSTRACT: {
-                BINARY_OP(-);
+                *(vm.stack_top - 1) -= VM_Pop();
                 break;
             }
             case OP_MULTIPLY: {
-                BINARY_OP(*);
+                *(vm.stack_top - 1) *= VM_Pop();
                 break;
             }
             case OP_DIVIDE: {
-                BINARY_OP(/);
+                *(vm.stack_top - 1) /= VM_Pop();
                 break;
             }
             case OP_NEGATE: {
@@ -156,6 +151,5 @@ InterpretResult run(Chunk *chunk)
 
 #undef READ_BYTE
 #undef READ_CONSTANT
-#undef BINARY_OP
 }
 
