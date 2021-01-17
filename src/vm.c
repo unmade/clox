@@ -9,7 +9,7 @@
 VM vm;
 
 static void reset_stack();
-static InterpretResult run();
+/* static InterpretResult run(); */
 
 
 void VM_Init()
@@ -50,16 +50,21 @@ InterpretResult VM_Interpret(const char *source)
 }
 
 
-static InterpretResult run()
+InterpretResult run(Chunk *chunk)
 {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_CONSTANT_LONG() \
+    (vm.chunk->constants.values[READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)])
 #define BINARY_OP(op) \
     do { \
         Value b = VM_Pop(); \
         Value a = VM_Pop(); \
         VM_Push(a op b); \
     } while (false)
+
+    vm.chunk = chunk;
+    vm.ip = vm.chunk->code;
 
     for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
@@ -77,6 +82,11 @@ static InterpretResult run()
         switch (instruction = READ_BYTE()) {
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
+                VM_Push(constant);
+                break;
+            }
+            case OP_CONSTANT_LONG: {
+                Value constant = READ_CONSTANT_LONG();
                 VM_Push(constant);
                 break;
             }

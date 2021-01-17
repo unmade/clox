@@ -4,7 +4,7 @@
 #include "chunk.h"
 #include "value.h"
 
-#define STACK_MAX 256
+#define STACK_MAX 512
 
 
 typedef struct {
@@ -27,5 +27,6 @@ void VM_Free();
 void VM_Push(Value value);
 Value VM_Pop();
 InterpretResult VM_Interpret(const char *source);
+InterpretResult run(Chunk *chunk);
 
 #endif

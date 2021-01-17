@@ -6,6 +6,7 @@
 
 static int simple_instruction(char *name, int offset);
 static int constant_instruction(char *name, Chunk *chunk, int offset);
+static int constant_long_instruction(char *name, Chunk *chunk, int offset);
 
 
 void Chunk_Disassemble(Chunk *chunk, const char *name)
@@ -35,6 +36,8 @@ int Chunk_DisassembleInstruction(Chunk *chunk, int offset)
     switch (instruction = chunk->code[offset]) {
         case OP_CONSTANT:
             return constant_instruction("OP_CONSTANT", chunk, offset);
+        case OP_CONSTANT_LONG:
+            return constant_long_instruction("OP_CONSTANT_LONG", chunk, offset);
         case OP_ADD:
             return simple_instruction("OP_ADD", offset);
         case OP_SUBSTRACT:
@@ -71,4 +74,21 @@ static int constant_instruction(char *name, Chunk *chunk, int offset)
     printf("'\n");
 
     return offset + 2;
+}
+
+
+static int constant_long_instruction(char *name, Chunk *chunk, int offset)
+{
+    int constant_idx;
+
+    constant_idx = (
+        chunk->code[offset + 1] | 
+        chunk->code[offset + 2] << 8 |
+        chunk->code[offset + 3] << 16
+    );
+    printf("%-16s: %4d '", name, constant_idx);
+    Value_Print(chunk->constants.values[constant_idx]);
+    printf("'\n");
+
+    return offset + 4;
 }

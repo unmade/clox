@@ -2,6 +2,9 @@
 #include "memory.h"
 
 
+static int Chunk_AddConstant(Chunk* chunk, Value value);
+
+
 void Chunk_Init(Chunk *chunk)
 {
     chunk->count = 0;
@@ -28,6 +31,25 @@ void Chunk_Write(Chunk *chunk, uint8_t byte, int line)
 }
 
 
+void Chunk_WriteConstant(Chunk *chunk, Value value, int line)
+{
+#define MAX_CONSTANTS 254
+    int constant_idx;
+
+    constant_idx = Chunk_AddConstant(chunk, value);
+    if (constant_idx > MAX_CONSTANTS) {
+        Chunk_Write(chunk, OP_CONSTANT_LONG, line);
+        Chunk_Write(chunk, (uint8_t)(constant_idx), line);
+        Chunk_Write(chunk, (uint8_t)((constant_idx >> 8)), line);
+        Chunk_Write(chunk, (uint8_t)((constant_idx >> 16)), line);
+    } else {
+        Chunk_Write(chunk, OP_CONSTANT, line);
+        Chunk_Write(chunk, constant_idx, line);
+    }
+#undef MAX_CONSTANTS
+}
+
+
 void Chunk_Free(Chunk *chunk)
 {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
@@ -37,7 +59,7 @@ void Chunk_Free(Chunk *chunk)
 }
 
 
-int Chunk_AddConstant(Chunk* chunk, Value value) 
+static int Chunk_AddConstant(Chunk* chunk, Value value) 
 {
     ValueArray_Write(&chunk->constants, value);
     return chunk->constants.count - 1;
