@@ -84,7 +84,7 @@ void Chunk_Write(Chunk *chunk, uint8_t byte, int line)
 
 void Chunk_WriteConstant(Chunk *chunk, Value value, int line)
 {
-#define MAX_CONSTANTS 254
+#define MAX_CONSTANTS 255
     int constant_idx;
 
     constant_idx = Chunk_AddConstant(chunk, value);
