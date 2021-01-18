@@ -11,7 +11,7 @@
 VM vm;
 
 static void VM_StackInit();
-/* static InterpretResult run(); */
+static InterpretResult run();
 
 
 void VM_Init()
@@ -81,20 +81,32 @@ Value VM_Pop()
 
 InterpretResult VM_Interpret(const char *source)
 {
-    compile(source);
-    return INTERPRET_OK;
+    Chunk chunk;
+    InterpretResult result;
+
+    Chunk_Init(&chunk);
+    if (!compile(source, &chunk)) {
+        Chunk_Free(&chunk);
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    vm.chunk = &chunk;
+    vm.ip = vm.chunk->code;
+
+    result = run();
+
+    Chunk_Free(&chunk);
+
+    return result;
 }
 
 
-InterpretResult run(Chunk *chunk)
+static InterpretResult run()
 {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() \
     (vm.chunk->constants.values[READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)])
-
-    vm.chunk = chunk;
-    vm.ip = vm.chunk->code;
 
     for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
